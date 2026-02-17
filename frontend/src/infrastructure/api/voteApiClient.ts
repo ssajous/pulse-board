@@ -1,10 +1,6 @@
 import type { VoteResponse } from "@domain/entities/Vote";
 import type { VoteApiPort } from "@domain/ports/VoteApiPort";
 
-interface ErrorResponse {
-  detail: string;
-}
-
 export class VoteApiClient implements VoteApiPort {
   async castVote(
     topicId: string,
@@ -16,15 +12,11 @@ export class VoteApiClient implements VoteApiPort {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fingerprint_id: fingerprintId, direction }),
     });
-    if (response.status === 404) {
-      const error: ErrorResponse = await response.json();
-      throw new Error(error.detail);
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const detail = body?.detail ?? "Failed to cast vote";
+      throw new Error(detail);
     }
-    if (response.status === 422) {
-      const error: ErrorResponse = await response.json();
-      throw new Error(error.detail);
-    }
-    if (!response.ok) throw new Error("Failed to cast vote");
     return response.json();
   }
 }

@@ -129,13 +129,10 @@ class CastVoteUseCase:
         Returns:
             A tuple of (vote_status, vote_direction).
         """
-        if isinstance(action, VoteCreated):
-            self._vote_repo.save(action.vote)
-            return "created", action.vote.value
+        if isinstance(action, VoteCancelled):
+            self._vote_repo.delete(action.vote_id)
+            return "cancelled", None
 
-        if isinstance(action, VoteToggled):
-            self._vote_repo.save(action.vote)
-            return "toggled", action.vote.value
-
-        self._vote_repo.delete(action.vote_id)
-        return "cancelled", None
+        self._vote_repo.save(action.vote)
+        status = "created" if isinstance(action, VoteCreated) else "toggled"
+        return status, action.vote.value

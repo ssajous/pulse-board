@@ -2,10 +2,12 @@ import { makeAutoObservable, observable, runInAction } from "mobx";
 import type { Topic } from "@domain/entities/Topic";
 import type { TopicApiPort } from "@domain/ports/TopicApiPort";
 import type { VoteApiPort } from "@domain/ports/VoteApiPort";
-import type {
-  FingerprintPort,
-} from "@domain/ports/FingerprintPort";
+import type { FingerprintPort } from "@domain/ports/FingerprintPort";
 import { computeScoreDelta } from "@application/use-cases/computeScoreDelta";
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export interface ToastMessage {
   message: string;
@@ -164,11 +166,10 @@ export class TopicsViewModel {
           this.userVotes.delete(topicId);
         }
         this.isVoting.delete(topicId);
-        const message =
-          e instanceof Error
-            ? e.message
-            : "Failed to cast vote";
-        this.showToast(message, "error");
+        this.showToast(
+          extractErrorMessage(e, "Failed to cast vote"),
+          "error"
+        );
       });
     }
   }
@@ -184,10 +185,7 @@ export class TopicsViewModel {
       });
     } catch (e) {
       runInAction(() => {
-        this.error =
-          e instanceof Error
-            ? e.message
-            : "Failed to fetch topics";
+        this.error = extractErrorMessage(e, "Failed to fetch topics");
         this.isLoading = false;
       });
     }
@@ -203,11 +201,10 @@ export class TopicsViewModel {
       );
       return true;
     } catch (e) {
-      const message =
-        e instanceof Error
-          ? e.message
-          : "Failed to create topic";
-      this.showToast(message, "error");
+      this.showToast(
+        extractErrorMessage(e, "Failed to create topic"),
+        "error"
+      );
       return false;
     }
   }
