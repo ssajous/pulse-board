@@ -3,16 +3,22 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from pulse_board.application.use_cases.cast_vote import CastVoteUseCase
 from pulse_board.application.use_cases.create_topic import (
     CreateTopicUseCase,
 )
 from pulse_board.application.use_cases.list_topics import ListTopicsUseCase
+from pulse_board.domain.services.voting_service import VotingService
 from pulse_board.presentation.api.app import create_app
 from pulse_board.presentation.api.dependencies import (
+    get_cast_vote_use_case,
     get_create_topic_use_case,
     get_list_topics_use_case,
 )
-from tests.unit.pulse_board.fakes import FakeTopicRepository
+from tests.unit.pulse_board.fakes import (
+    FakeTopicRepository,
+    FakeVoteRepository,
+)
 
 
 @pytest.fixture
@@ -22,13 +28,27 @@ def fake_repo() -> FakeTopicRepository:
 
 
 @pytest.fixture
-def client(fake_repo: FakeTopicRepository) -> TestClient:
-    """Provide a test client wired to the fake repository."""
+def fake_vote_repo() -> FakeVoteRepository:
+    """Provide a fresh in-memory vote repository."""
+    return FakeVoteRepository()
+
+
+@pytest.fixture
+def client(
+    fake_repo: FakeTopicRepository,
+    fake_vote_repo: FakeVoteRepository,
+) -> TestClient:
+    """Provide a test client wired to fake repositories."""
     app = create_app()
     app.dependency_overrides[get_create_topic_use_case] = lambda: CreateTopicUseCase(
         repository=fake_repo
     )
     app.dependency_overrides[get_list_topics_use_case] = lambda: ListTopicsUseCase(
         repository=fake_repo
+    )
+    app.dependency_overrides[get_cast_vote_use_case] = lambda: CastVoteUseCase(
+        vote_repo=fake_vote_repo,
+        topic_repo=fake_repo,
+        voting_service=VotingService(),
     )
     return TestClient(app)
