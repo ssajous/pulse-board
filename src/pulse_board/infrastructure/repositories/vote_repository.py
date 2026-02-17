@@ -2,9 +2,11 @@
 
 import uuid
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from pulse_board.domain.entities.vote import Vote
+from pulse_board.domain.exceptions import DuplicateVoteError
 from pulse_board.domain.ports.vote_repository_port import VoteRepository
 from pulse_board.infrastructure.database.models.vote_model import (
     VoteModel,
@@ -22,11 +24,21 @@ class SQLAlchemyVoteRepository(VoteRepository):
 
         Uses session.merge for upsert-like behaviour so the
         same call handles both inserts and updates.
+
+        Raises:
+            DuplicateVoteError: If a unique constraint is violated
+                due to a concurrent duplicate vote.
         """
         with self._session_factory() as session:
             model = self._to_model(vote)
             merged = session.merge(model)
-            session.commit()
+            try:
+                session.commit()
+            except IntegrityError as exc:
+                session.rollback()
+                raise DuplicateVoteError(
+                    "A vote already exists for this topic and fingerprint"
+                ) from exc
             session.refresh(merged)
             return self._to_entity(merged)
 

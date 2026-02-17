@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -25,6 +26,10 @@ class VoteModel(Base):
             "topic_id",
             "fingerprint_id",
             name="uq_votes_topic_fingerprint",
+        ),
+        CheckConstraint(
+            "value IN (-1, 1)",
+            name="ck_votes_value",
         ),
     )
 

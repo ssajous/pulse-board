@@ -2,6 +2,7 @@
 
 import uuid
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session, sessionmaker
 
 from pulse_board.domain.entities.topic import Topic
@@ -49,15 +50,24 @@ class SQLAlchemyTopicRepository(TopicRepository):
                 session.commit()
 
     def update_score(self, id: uuid.UUID, delta: int) -> Topic | None:
-        """Update a topic's score by a relative delta."""
+        """Update a topic's score by a relative delta.
+
+        Uses an atomic SQL expression to avoid lost updates
+        under concurrent access.
+        """
         with self._session_factory() as session:
-            model = session.get(TopicModel, id)
-            if model is None:
-                return None
-            model.score += delta
+            result = session.execute(
+                update(TopicModel)
+                .where(TopicModel.id == id)
+                .values(score=TopicModel.score + delta)
+                .returning(TopicModel)
+            )
+            row = result.fetchone()
             session.commit()
-            session.refresh(model)
-            return self._to_entity(model)
+            if row is None:
+                return None
+            model = session.get(TopicModel, id)
+            return self._to_entity(model) if model else None
 
     @staticmethod
     def _to_model(entity: Topic) -> TopicModel:
