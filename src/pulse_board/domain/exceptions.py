@@ -15,3 +15,7 @@ class ValidationError(DomainError):
 
 class EntityNotFoundError(DomainError):
     """Raised when a requested entity does not exist."""
+
+
+class DuplicateVoteError(DomainError):
+    """Raised when a duplicate vote is detected."""

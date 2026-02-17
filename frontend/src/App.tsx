@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { TopicApiClient } from "@infrastructure/api/topicApiClient";
+import { VoteApiClient } from "@infrastructure/api/voteApiClient";
+import {
+  FingerprintService,
+} from "@infrastructure/fingerprint/fingerprintService";
 import {
   TopicsViewModel,
   TopicsViewModelProvider,
@@ -10,7 +14,14 @@ import { TopicList, TopicListHeader } from "@presentation/components/topic-list"
 import { ToastContainer } from "@presentation/components/toast";
 
 function App() {
-  const [vm] = useState(() => new TopicsViewModel(new TopicApiClient()));
+  const [vm] = useState(
+    () =>
+      new TopicsViewModel(
+        new TopicApiClient(),
+        new VoteApiClient(),
+        new FingerprintService(),
+      ),
+  );
 
   return (
     <TopicsViewModelProvider value={vm}>

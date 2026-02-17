@@ -1,1 +1,1 @@
-export {};
+export { computeScoreDelta } from "./computeScoreDelta";

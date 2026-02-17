@@ -8,6 +8,9 @@ from pulse_board.presentation.api.routes.health import router as health_router
 from pulse_board.presentation.api.routes.topics import (
     router as topics_router,
 )
+from pulse_board.presentation.api.routes.votes import (
+    router as votes_router,
+)
 
 
 def create_app() -> FastAPI:
@@ -30,5 +33,6 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(topics_router)
+    app.include_router(votes_router)
 
     return app

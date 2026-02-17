@@ -42,3 +42,16 @@ def cleanup_topics(integration_session_factory: sessionmaker):  # type: ignore[t
     with integration_session_factory() as session:
         session.execute(text("DELETE FROM topics"))
         session.commit()
+
+
+@pytest.fixture
+def cleanup_votes(integration_session_factory: sessionmaker):  # type: ignore[type-arg]
+    """Delete all votes and topics after each test.
+
+    Votes are deleted first to respect the foreign-key constraint.
+    """
+    yield
+    with integration_session_factory() as session:
+        session.execute(text("DELETE FROM votes"))
+        session.execute(text("DELETE FROM topics"))
+        session.commit()
