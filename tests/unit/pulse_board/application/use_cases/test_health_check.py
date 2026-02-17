@@ -1,5 +1,7 @@
 """Tests for the health check use case."""
 
+import pytest
+
 from pulse_board.application.use_cases.health_check import (
     HealthCheckResult,
     HealthCheckUseCase,
@@ -39,8 +41,5 @@ class TestHealthCheckUseCase:
     def test_result_is_frozen(self) -> None:
         """Health check result should be immutable."""
         result = HealthCheckResult(status="healthy", database="connected")
-        try:
+        with pytest.raises(AttributeError):
             result.status = "changed"  # type: ignore[misc]
-            assert False, "Should have raised FrozenInstanceError"
-        except AttributeError:
-            pass
