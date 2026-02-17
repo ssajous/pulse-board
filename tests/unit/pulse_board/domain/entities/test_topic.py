@@ -95,3 +95,42 @@ class TestTopicCreate:
             Topic.create("")
 
         assert "empty" in exc_info.value.message.lower()
+
+
+class TestTopicSanitization:
+    """Tests for HTML sanitization in Topic.create."""
+
+    def test_create_escapes_html_tags(self) -> None:
+        """Script tags should be escaped to prevent XSS."""
+        topic = Topic.create("<script>alert(1)</script>")
+        assert "<script>" not in topic.content
+        assert "&lt;script&gt;" in topic.content
+
+    def test_create_escapes_ampersand(self) -> None:
+        """Ampersands should be escaped to HTML entity."""
+        topic = Topic.create("A & B")
+        assert topic.content == "A &amp; B"
+
+    def test_create_escapes_quotes(self) -> None:
+        """Double quotes should be escaped to HTML entity."""
+        topic = Topic.create('He said "hello"')
+        assert topic.content == "He said &quot;hello&quot;"
+
+    def test_create_escapes_single_quotes(self) -> None:
+        """Single quotes should be escaped to HTML entity."""
+        topic = Topic.create("It's")
+        assert topic.content == "It&#x27;s"
+
+    def test_create_validates_length_before_sanitizing(self) -> None:
+        """Length validation runs on raw input, not escaped output."""
+        content = "a" * (MAX_CONTENT_LENGTH - 1) + "<"
+        topic = Topic.create(content)
+        assert topic.content.endswith("&lt;")
+        # Stored content is longer than 255 due to escaping,
+        # but validation passed because it checks raw length
+        assert len(topic.content) > MAX_CONTENT_LENGTH
+
+    def test_plain_text_unchanged(self) -> None:
+        """Plain text without special characters should pass through."""
+        topic = Topic.create("Hello world")
+        assert topic.content == "Hello world"

@@ -45,3 +45,39 @@ class TestSettings:
         settings = Settings(_env_file=None)  # type: ignore[call-arg]
         origins = settings.cors_origins.split(",")
         assert "http://localhost:5173" in origins
+
+
+class TestAllowedWsOrigins:
+    """Tests for Settings.allowed_ws_origins property."""
+
+    def test_parses_single_origin(self) -> None:
+        """Should parse a single origin into a one-element set."""
+        settings = Settings(
+            cors_origins="http://localhost:5173",
+            _env_file=None,  # type: ignore[call-arg]
+        )
+        assert settings.allowed_ws_origins == {
+            "http://localhost:5173",
+        }
+
+    def test_parses_multiple_origins(self) -> None:
+        """Should parse comma-separated origins into a set."""
+        settings = Settings(
+            cors_origins=("http://localhost:5173,http://127.0.0.1:5173"),
+            _env_file=None,  # type: ignore[call-arg]
+        )
+        assert settings.allowed_ws_origins == {
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        }
+
+    def test_strips_whitespace(self) -> None:
+        """Should strip whitespace around each origin."""
+        settings = Settings(
+            cors_origins=("http://localhost:5173 , http://127.0.0.1:5173 "),
+            _env_file=None,  # type: ignore[call-arg]
+        )
+        assert settings.allowed_ws_origins == {
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        }

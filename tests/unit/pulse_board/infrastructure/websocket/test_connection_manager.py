@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -351,3 +351,99 @@ class TestPublishTopicCensuredMultiClient:
         alive.send_json.assert_awaited_once()
         assert dead not in manager._connections
         assert alive in manager._connections
+
+
+def _make_mock_websocket_with_ip(ip: str) -> AsyncMock:
+    """Create a mock WebSocket with a specific client IP."""
+    ws = _make_mock_websocket()
+    client = MagicMock()
+    client.host = ip
+    ws.client = client
+    return ws
+
+
+class TestConnectionLimits:
+    """Tests for ConnectionManager connection limits."""
+
+    @pytest.mark.asyncio
+    async def test_rejects_when_max_connections_reached(
+        self,
+    ) -> None:
+        """Should reject with code 1013 at global limit."""
+        manager = ConnectionManager(
+            max_connections=2,
+            max_connections_per_ip=100,
+        )
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+        ws3 = _make_mock_websocket()
+
+        await manager.connect(ws1)
+        await manager.connect(ws2)
+        await manager.connect(ws3)
+
+        ws1.accept.assert_awaited_once()
+        ws2.accept.assert_awaited_once()
+        ws3.accept.assert_not_awaited()
+        ws3.close.assert_awaited_once_with(code=1013)
+        assert len(manager._connections) == 2
+
+    @pytest.mark.asyncio
+    async def test_rejects_when_per_ip_limit_reached(
+        self,
+    ) -> None:
+        """Should reject with code 1013 at per-IP limit."""
+        manager = ConnectionManager(
+            max_connections=100,
+            max_connections_per_ip=2,
+        )
+        ws1 = _make_mock_websocket_with_ip("1.2.3.4")
+        ws2 = _make_mock_websocket_with_ip("1.2.3.4")
+        ws3 = _make_mock_websocket_with_ip("1.2.3.4")
+
+        await manager.connect(ws1)
+        await manager.connect(ws2)
+        await manager.connect(ws3)
+
+        ws1.accept.assert_awaited_once()
+        ws2.accept.assert_awaited_once()
+        ws3.accept.assert_not_awaited()
+        ws3.close.assert_awaited_once_with(code=1013)
+
+    @pytest.mark.asyncio
+    async def test_allows_different_ips_when_per_ip_limit_reached(
+        self,
+    ) -> None:
+        """Different IPs should not share per-IP limits."""
+        manager = ConnectionManager(
+            max_connections=100,
+            max_connections_per_ip=1,
+        )
+        ws1 = _make_mock_websocket_with_ip("1.2.3.4")
+        ws2 = _make_mock_websocket_with_ip("5.6.7.8")
+
+        await manager.connect(ws1)
+        await manager.connect(ws2)
+
+        ws1.accept.assert_awaited_once()
+        ws2.accept.assert_awaited_once()
+        assert len(manager._connections) == 2
+
+    @pytest.mark.asyncio
+    async def test_accepts_after_disconnect_frees_slot(
+        self,
+    ) -> None:
+        """Disconnecting should free a slot for new connections."""
+        manager = ConnectionManager(
+            max_connections=1,
+            max_connections_per_ip=100,
+        )
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+
+        await manager.connect(ws1)
+        await manager.disconnect(ws1)
+        await manager.connect(ws2)
+
+        ws2.accept.assert_awaited_once()
+        assert ws2 in manager._connections
