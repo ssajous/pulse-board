@@ -2,6 +2,7 @@ import type {
   WebSocketPort,
   WebSocketMessageHandler,
 } from "@domain/ports/WebSocketPort";
+import { logger } from "@infrastructure/logger";
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 5000;
@@ -49,17 +50,17 @@ export class WebSocketClient implements WebSocketPort {
     if (!this.url) return;
 
     if (this.reconnectAttempts > 0) {
-      console.log(
+      logger.log(
         `WebSocket reconnecting (attempt ${this.reconnectAttempts})...`
       );
     } else {
-      console.log("WebSocket connecting...");
+      logger.log("WebSocket connecting...");
     }
 
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = (): void => {
-      console.log("WebSocket connected to", this.url);
+      logger.log("WebSocket connected to", this.url);
       const wasReconnect = this.reconnectAttempts > 0;
       this.reconnectAttempts = 0;
 
@@ -75,7 +76,7 @@ export class WebSocketClient implements WebSocketPort {
         );
         this.messageHandlers.forEach((h) => h(data));
       } catch {
-        console.error(
+        logger.error(
           "WebSocket: failed to parse message",
           event.data
         );
@@ -83,13 +84,13 @@ export class WebSocketClient implements WebSocketPort {
     };
 
     this.socket.onclose = (): void => {
-      console.log("WebSocket disconnected");
+      logger.log("WebSocket disconnected");
       this.socket = null;
       this.scheduleReconnect();
     };
 
     this.socket.onerror = (event: Event): void => {
-      console.error("WebSocket error", event);
+      logger.error("WebSocket error", event);
     };
   }
 
@@ -97,7 +98,7 @@ export class WebSocketClient implements WebSocketPort {
     if (!this.shouldReconnect) return;
 
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.log(
+      logger.log(
         "WebSocket: max reconnect attempts reached"
       );
       return;
@@ -110,7 +111,7 @@ export class WebSocketClient implements WebSocketPort {
       MAX_RECONNECT_DELAY_MS
     );
 
-    console.log(
+    logger.log(
       `WebSocket: reconnecting in ${delay}ms`
     );
     this.reconnectTimer = setTimeout(() => {

@@ -5,6 +5,7 @@ import type { VoteApiPort } from "@domain/ports/VoteApiPort";
 import type { FingerprintPort } from "@domain/ports/FingerprintPort";
 import type { WebSocketPort } from "@domain/ports/WebSocketPort";
 import { computeScoreDelta } from "@application/use-cases/computeScoreDelta";
+import { logger } from "@infrastructure/logger";
 
 function extractErrorMessage(
   error: unknown,
@@ -300,7 +301,7 @@ export class TopicsViewModel {
   }
 
   private handleWebSocketMessage(data: unknown): void {
-    console.log("WebSocket message received:", data);
+    logger.log("WebSocket message received:", data);
     if (!isWebSocketMessage(data)) return;
 
     switch (data.type) {
