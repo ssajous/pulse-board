@@ -1,5 +1,6 @@
 .PHONY: help dev dev-backend dev-frontend test test-unit test-frontend test-integration test-all test-coverage test-e2e \
-	infra-up infra-down docker-build docker-run clean version version-patch version-minor version-major \
+	infra-up infra-down docker-build docker-run docker-prod-up docker-prod-down docker-prod-logs \
+	clean version version-patch version-minor version-major \
 	lint format migrate
 
 .DEFAULT_GOAL := help
@@ -115,6 +116,15 @@ docker-build: ## Build Docker image
 
 docker-run: ## Run application in Docker
 	docker run --rm --network host --env-file .env pulse-board:latest
+
+docker-prod-up: ## Start production stack
+	docker compose -f docker-compose.prod.yml up -d --build
+
+docker-prod-down: ## Stop production stack
+	docker compose -f docker-compose.prod.yml down
+
+docker-prod-logs: ## View production logs
+	docker compose -f docker-compose.prod.yml logs -f
 
 # ──────────────────────────────────────────────
 # Cleanup

@@ -9,7 +9,17 @@ from pulse_board.presentation.api.schemas.health import HealthResponse
 router = APIRouter()
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["health"],
+    summary="Check application health",
+    description=("Returns the health status of the application and its dependencies."),
+    responses={
+        200: {"description": "Application is healthy"},
+        503: {"description": "Application is degraded"},
+    },
+)
 def health_check(
     use_case: HealthCheckUseCase = Depends(get_health_check_use_case),
     response: Response = Response(),

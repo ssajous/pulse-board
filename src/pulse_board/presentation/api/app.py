@@ -2,6 +2,7 @@
 
 import logging
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,6 +33,20 @@ def create_app() -> FastAPI:
         title="Community Pulse Board",
         description="Real-time community engagement platform",
         version="0.1.0",
+        openapi_tags=[
+            {
+                "name": "health",
+                "description": "Application health monitoring",
+            },
+            {
+                "name": "topics",
+                "description": "Topic creation and listing",
+            },
+            {
+                "name": "votes",
+                "description": "Voting on topics",
+            },
+        ],
     )
 
     app.add_middleware(
@@ -60,5 +75,22 @@ def create_app() -> FastAPI:
         app.include_router(test_router)
         logger = logging.getLogger(__name__)
         logger.warning("Test mode enabled: test utility endpoints active")
+
+    # Serve static frontend assets in production Docker builds
+    static_dir = Path(__file__).resolve().parent.parent.parent.parent.parent / "static"
+    if static_dir.is_dir():
+        from fastapi.staticfiles import StaticFiles
+        from starlette.responses import FileResponse
+
+        app.mount(
+            "/assets",
+            StaticFiles(directory=str(static_dir / "assets")),
+            name="static-assets",
+        )
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def spa_fallback(full_path: str) -> FileResponse:
+            """Serve index.html for SPA client-side routing."""
+            return FileResponse(str(static_dir / "index.html"))
 
     return app
