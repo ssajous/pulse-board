@@ -1,1 +1,1 @@
-export {};
+export { TopicApiClient } from "./topicApiClient";

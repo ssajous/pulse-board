@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from pulse_board.domain.ports.database_port import DatabasePort
 from pulse_board.infrastructure.config.settings import get_settings
@@ -26,8 +27,19 @@ class SQLAlchemyDatabase(DatabasePort):
 
 
 @lru_cache(maxsize=1)
+def get_engine() -> Engine:
+    """Get cached SQLAlchemy engine."""
+    settings = get_settings()
+    return create_engine(settings.effective_database_url)
+
+
+@lru_cache(maxsize=1)
+def get_session_factory() -> sessionmaker[Session]:
+    """Get cached session factory."""
+    return sessionmaker(bind=get_engine())
+
+
+@lru_cache(maxsize=1)
 def get_database() -> SQLAlchemyDatabase:
     """Get cached database instance."""
-    settings = get_settings()
-    engine = create_engine(settings.effective_database_url)
-    return SQLAlchemyDatabase(engine)
+    return SQLAlchemyDatabase(get_engine())

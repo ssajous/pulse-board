@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pulse_board.infrastructure.config.settings import get_settings
 from pulse_board.presentation.api.routes.health import router as health_router
+from pulse_board.presentation.api.routes.topics import (
+    router as topics_router,
+)
 
 
 def create_app() -> FastAPI:
@@ -26,5 +29,6 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health_router)
+    app.include_router(topics_router)
 
     return app
