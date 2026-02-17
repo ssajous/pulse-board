@@ -10,6 +10,9 @@ from pulse_board.infrastructure.database.base import Base
 from pulse_board.infrastructure.database.models.topic_model import (
     TopicModel,  # noqa: F401
 )
+from pulse_board.infrastructure.database.models.vote_model import (
+    VoteModel,  # noqa: F401
+)
 
 config = context.config
 

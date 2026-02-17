@@ -48,6 +48,17 @@ class SQLAlchemyTopicRepository(TopicRepository):
                 session.delete(model)
                 session.commit()
 
+    def update_score(self, id: uuid.UUID, delta: int) -> Topic | None:
+        """Update a topic's score by a relative delta."""
+        with self._session_factory() as session:
+            model = session.get(TopicModel, id)
+            if model is None:
+                return None
+            model.score += delta
+            session.commit()
+            session.refresh(model)
+            return self._to_entity(model)
+
     @staticmethod
     def _to_model(entity: Topic) -> TopicModel:
         return TopicModel(
