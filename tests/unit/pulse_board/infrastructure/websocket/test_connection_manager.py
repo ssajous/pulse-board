@@ -12,11 +12,8 @@ from pulse_board.infrastructure.websocket.connection_manager import (
 
 
 def _make_mock_websocket() -> AsyncMock:
-    """Create a mock WebSocket with async accept and send_json."""
-    ws = AsyncMock()
-    ws.accept = AsyncMock()
-    ws.send_json = AsyncMock()
-    return ws
+    """Create a mock WebSocket with async methods."""
+    return AsyncMock()
 
 
 class TestConnect:

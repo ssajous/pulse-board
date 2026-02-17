@@ -66,15 +66,6 @@ async def cast_vote(
             detail=exc.message,
         ) from exc
 
-    response = CastVoteResponse(
-        topic_id=str(result.topic_id),
-        new_score=result.new_score,
-        vote_status=result.vote_status,
-        user_vote=result.vote_direction,
-        censured=result.censured,
-    )
-
-    # Broadcast score update (fire-and-forget)
     try:
         await publisher.publish_score_update(topic_id, result.new_score)
         if result.censured:
@@ -85,4 +76,10 @@ async def cast_vote(
             exc_info=True,
         )
 
-    return response
+    return CastVoteResponse(
+        topic_id=str(result.topic_id),
+        new_score=result.new_score,
+        vote_status=result.vote_status,
+        user_vote=result.vote_direction,
+        censured=result.censured,
+    )

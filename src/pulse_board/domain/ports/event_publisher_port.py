@@ -18,12 +18,7 @@ class EventPublisher(ABC):
         topic_id: uuid.UUID,
         score: int,
     ) -> None:
-        """Broadcast a score update for a topic.
-
-        Args:
-            topic_id: The UUID of the topic whose score changed.
-            score: The new absolute score value.
-        """
+        """Broadcast a score update for a topic."""
         ...
 
     @abstractmethod
@@ -31,11 +26,7 @@ class EventPublisher(ABC):
         self,
         topic_id: uuid.UUID,
     ) -> None:
-        """Broadcast that a topic has been censured.
-
-        Args:
-            topic_id: The UUID of the censured topic.
-        """
+        """Broadcast that a topic has been censured."""
         ...
 
     @abstractmethod
@@ -46,12 +37,5 @@ class EventPublisher(ABC):
         score: int,
         created_at: datetime,
     ) -> None:
-        """Broadcast a new topic creation.
-
-        Args:
-            topic_id: The UUID of the newly created topic.
-            content: The text content of the topic.
-            score: The initial score of the topic.
-            created_at: The timestamp when the topic was created.
-        """
+        """Broadcast a new topic creation."""
         ...

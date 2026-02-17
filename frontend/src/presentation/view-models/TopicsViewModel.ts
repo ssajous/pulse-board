@@ -292,7 +292,7 @@ export class TopicsViewModel {
     this.toast = null;
   }
 
-  handleWebSocketMessage(data: unknown): void {
+  private handleWebSocketMessage(data: unknown): void {
     if (!isWebSocketMessage(data)) return;
 
     switch (data.type) {
@@ -308,7 +308,7 @@ export class TopicsViewModel {
     }
   }
 
-  handleScoreUpdate(
+  private handleScoreUpdate(
     topicId: string,
     score: number
   ): void {
@@ -316,7 +316,7 @@ export class TopicsViewModel {
     this.setTopicScore(topicId, score);
   }
 
-  handleTopicCensured(topicId: string): void {
+  private handleTopicCensured(topicId: string): void {
     this.topics = this.topics.filter(
       (t) => t.id !== topicId
     );
@@ -326,27 +326,13 @@ export class TopicsViewModel {
     );
   }
 
-  handleNewTopic(topicData: {
-    id: string;
-    content: string;
-    score: number;
-    created_at: string;
-  }): void {
-    const exists = this.topics.some(
-      (t) => t.id === topicData.id
-    );
-    if (exists) return;
+  private handleNewTopic(topic: NewTopicMessage["topic"]): void {
+    if (this.topics.some((t) => t.id === topic.id)) return;
 
-    const newTopic: Topic = {
-      id: topicData.id,
-      content: topicData.content,
-      score: topicData.score,
-      created_at: topicData.created_at,
-    };
-    this.topics = [...this.topics, newTopic];
+    this.topics = [...this.topics, topic];
   }
 
-  handleReconnect(): void {
+  private handleReconnect(): void {
     this.fetchTopics();
   }
 

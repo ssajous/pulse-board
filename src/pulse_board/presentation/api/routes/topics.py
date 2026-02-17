@@ -47,14 +47,6 @@ async def create_topic(
             detail=exc.message,
         ) from exc
 
-    response = TopicResponse(
-        id=str(result.id),
-        content=result.content,
-        score=result.score,
-        created_at=result.created_at,
-    )
-
-    # Broadcast new topic (fire-and-forget)
     try:
         await publisher.publish_new_topic(
             result.id,
@@ -68,7 +60,12 @@ async def create_topic(
             exc_info=True,
         )
 
-    return response
+    return TopicResponse(
+        id=str(result.id),
+        content=result.content,
+        score=result.score,
+        created_at=result.created_at,
+    )
 
 
 @router.get("", response_model=TopicListResponse)

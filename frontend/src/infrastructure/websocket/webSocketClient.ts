@@ -48,12 +48,13 @@ export class WebSocketClient implements WebSocketPort {
   private createConnection(): void {
     if (!this.url) return;
 
-    const isReconnect = this.reconnectAttempts > 0;
-    console.log(
-      isReconnect
-        ? `WebSocket reconnecting (attempt ${this.reconnectAttempts})...`
-        : "WebSocket connecting..."
-    );
+    if (this.reconnectAttempts > 0) {
+      console.log(
+        `WebSocket reconnecting (attempt ${this.reconnectAttempts})...`
+      );
+    } else {
+      console.log("WebSocket connecting...");
+    }
 
     this.socket = new WebSocket(this.url);
 
@@ -105,7 +106,7 @@ export class WebSocketClient implements WebSocketPort {
     this.reconnectAttempts += 1;
     const delay = Math.min(
       INITIAL_RECONNECT_DELAY_MS *
-        Math.pow(2, this.reconnectAttempts - 1),
+        2 ** (this.reconnectAttempts - 1),
       MAX_RECONNECT_DELAY_MS
     );
 

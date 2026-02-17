@@ -49,16 +49,17 @@ def client(
 ) -> TestClient:
     """Provide a test client wired to fake repositories and publisher."""
     app = create_app()
-    app.dependency_overrides[get_create_topic_use_case] = lambda: CreateTopicUseCase(
+    overrides = app.dependency_overrides
+    overrides[get_create_topic_use_case] = lambda: CreateTopicUseCase(
         repository=fake_repo
     )
-    app.dependency_overrides[get_list_topics_use_case] = lambda: ListTopicsUseCase(
+    overrides[get_list_topics_use_case] = lambda: ListTopicsUseCase(
         repository=fake_repo
     )
-    app.dependency_overrides[get_cast_vote_use_case] = lambda: CastVoteUseCase(
+    overrides[get_cast_vote_use_case] = lambda: CastVoteUseCase(
         vote_repo=fake_vote_repo,
         topic_repo=fake_repo,
         voting_service=VotingService(),
     )
-    app.dependency_overrides[get_event_publisher] = lambda: fake_publisher
+    overrides[get_event_publisher] = lambda: fake_publisher
     return TestClient(app)

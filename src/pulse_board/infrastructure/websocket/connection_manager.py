@@ -32,11 +32,7 @@ class ConnectionManager(EventPublisher):
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket) -> None:
-        """Accept a WebSocket handshake and register the connection.
-
-        Args:
-            websocket: The incoming WebSocket to accept and track.
-        """
+        """Accept a WebSocket handshake and register the connection."""
         await websocket.accept()
         async with self._lock:
             self._connections.add(websocket)
@@ -46,11 +42,7 @@ class ConnectionManager(EventPublisher):
         )
 
     async def disconnect(self, websocket: WebSocket) -> None:
-        """Remove a WebSocket from the active connection set.
-
-        Args:
-            websocket: The WebSocket to remove.
-        """
+        """Remove a WebSocket from the active connection set."""
         async with self._lock:
             self._connections.discard(websocket)
         logger.info(
@@ -61,41 +53,29 @@ class ConnectionManager(EventPublisher):
     async def broadcast(self, message: dict[str, Any]) -> None:
         """Send a JSON message to every active connection.
 
-        Connections that fail to receive the message are logged
-        and removed from the active set.
-
-        Args:
-            message: JSON-serialisable dictionary to broadcast.
+        Dead connections are logged and removed from the active set.
         """
         async with self._lock:
             connections = set(self._connections)
 
-        dead: list[WebSocket] = []
+        dead: set[WebSocket] = set()
         for ws in connections:
             try:
                 await ws.send_json(message)
             except Exception:
                 logger.warning("Failed to send to client, removing connection")
-                dead.append(ws)
+                dead.add(ws)
 
         if dead:
             async with self._lock:
-                for ws in dead:
-                    self._connections.discard(ws)
-
-    # -- EventPublisher port implementations --------------------------
+                self._connections -= dead
 
     async def publish_score_update(
         self,
         topic_id: uuid.UUID,
         score: int,
     ) -> None:
-        """Broadcast a score change for a topic.
-
-        Args:
-            topic_id: UUID of the topic whose score changed.
-            score: The new absolute score value.
-        """
+        """Broadcast a score change for a topic."""
         await self.broadcast(
             {
                 "type": "score_update",
@@ -108,11 +88,7 @@ class ConnectionManager(EventPublisher):
         self,
         topic_id: uuid.UUID,
     ) -> None:
-        """Broadcast that a topic has been censured.
-
-        Args:
-            topic_id: UUID of the censured topic.
-        """
+        """Broadcast that a topic has been censured."""
         await self.broadcast(
             {
                 "type": "topic_censured",
@@ -127,14 +103,7 @@ class ConnectionManager(EventPublisher):
         score: int,
         created_at: datetime,
     ) -> None:
-        """Broadcast a newly created topic.
-
-        Args:
-            topic_id: UUID of the new topic.
-            content: The text content of the topic.
-            score: The initial score of the topic.
-            created_at: Timestamp when the topic was created.
-        """
+        """Broadcast a newly created topic."""
         await self.broadcast(
             {
                 "type": "new_topic",

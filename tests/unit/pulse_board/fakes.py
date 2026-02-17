@@ -81,14 +81,12 @@ class FakeEventPublisher(EventPublisher):
         topic_id: uuid.UUID,
         score: int,
     ) -> None:
-        """Record a score update event."""
         self.score_updates.append({"topic_id": topic_id, "score": score})
 
     async def publish_topic_censured(
         self,
         topic_id: uuid.UUID,
     ) -> None:
-        """Record a topic censured event."""
         self.censured_events.append({"topic_id": topic_id})
 
     async def publish_new_topic(
@@ -98,7 +96,6 @@ class FakeEventPublisher(EventPublisher):
         score: int,
         created_at: datetime,
     ) -> None:
-        """Record a new topic event."""
         self.new_topic_events.append(
             {
                 "topic_id": topic_id,

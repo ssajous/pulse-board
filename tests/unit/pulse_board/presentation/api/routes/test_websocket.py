@@ -1,5 +1,7 @@
 """Tests for the WebSocket endpoint route."""
 
+import asyncio
+
 from fastapi.testclient import TestClient
 
 from pulse_board.presentation.api.app import create_app
@@ -14,7 +16,6 @@ class TestWebSocketEndpoint:
         client = TestClient(app)
 
         with client.websocket_connect("/ws") as ws:
-            # Connection established; close cleanly
             ws.close()
 
     def test_websocket_receives_broadcast(self) -> None:
@@ -23,14 +24,7 @@ class TestWebSocketEndpoint:
         client = TestClient(app)
 
         with client.websocket_connect("/ws") as ws:
-            # Access the manager from app state and broadcast
             manager = app.state.connection_manager
-            # The TestClient runs sync, so we need to use
-            # the broadcast through the manager directly.
-            # In the TestClient context, the event loop is
-            # managed internally.
-            import asyncio
-
             asyncio.get_event_loop().run_until_complete(
                 manager.broadcast({"type": "test", "payload": "hello"})
             )
