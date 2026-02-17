@@ -328,7 +328,7 @@ components/
 
 ## Git
 
-1. Do NOT mention Claude Code in the commit messages
+1. Do NOT mention Claude Code in the commit messages or PR descriptions.
 2. Do NOT add co-authors in commit 
 3. Do NOT amend commits. New changes must be a new commit. Make no assumptions about when changes may have been pushed to a remote
 4. ALWAYS Commit to git after the completion of each task. Commits should have detailed commit messages.
