@@ -33,6 +33,12 @@ router = APIRouter(prefix="/api/topics", tags=["topics"])
     "",
     response_model=TopicResponse,
     status_code=status.HTTP_201_CREATED,
+    summary="Create a new topic",
+    description=("Submit a new topic for community discussion and voting."),
+    responses={
+        201: {"description": "Topic created successfully"},
+        422: {"description": "Validation error"},
+    },
 )
 async def create_topic(
     request: CreateTopicRequest,
@@ -69,7 +75,15 @@ async def create_topic(
     )
 
 
-@router.get("", response_model=TopicListResponse)
+@router.get(
+    "",
+    response_model=TopicListResponse,
+    summary="List all topics",
+    description=("Retrieve all active topics sorted by popularity score."),
+    responses={
+        200: {"description": "List of active topics"},
+    },
+)
 def list_topics(
     use_case: ListTopicsUseCase = Depends(get_list_topics_use_case),
 ) -> TopicListResponse:

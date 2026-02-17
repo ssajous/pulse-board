@@ -31,6 +31,19 @@ router = APIRouter(prefix="/api/topics", tags=["votes"])
 @router.post(
     "/{topic_id}/votes",
     response_model=CastVoteResponse,
+    summary="Cast a vote on a topic",
+    description=(
+        "Cast an upvote or downvote on a topic. "
+        "If the user already voted in the same direction, "
+        "the vote is cancelled. If they voted in the "
+        "opposite direction, the vote is toggled."
+    ),
+    responses={
+        200: {"description": "Vote cast successfully"},
+        404: {"description": "Topic not found"},
+        409: {"description": "Duplicate vote conflict"},
+        422: {"description": "Validation error"},
+    },
 )
 async def cast_vote(
     topic_id: UUID,
