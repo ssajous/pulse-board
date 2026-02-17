@@ -38,11 +38,14 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins.split(","),
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type"],
     )
 
-    app.state.connection_manager = ConnectionManager()
+    app.state.connection_manager = ConnectionManager(
+        max_connections=settings.ws_max_connections,
+        max_connections_per_ip=settings.ws_max_connections_per_ip,
+    )
 
     app.include_router(health_router)
     app.include_router(topics_router)
