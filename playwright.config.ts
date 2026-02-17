@@ -28,7 +28,7 @@ export default defineConfig({
         " pulse_board.presentation.api.app:create_app" +
         " --host 0.0.0.0 --port 8000 --factory",
       url: "http://localhost:8000/health",
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       timeout: 30_000,
     },
     {
