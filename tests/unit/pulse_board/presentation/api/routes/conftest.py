@@ -13,9 +13,11 @@ from pulse_board.presentation.api.app import create_app
 from pulse_board.presentation.api.dependencies import (
     get_cast_vote_use_case,
     get_create_topic_use_case,
+    get_event_publisher,
     get_list_topics_use_case,
 )
 from tests.unit.pulse_board.fakes import (
+    FakeEventPublisher,
     FakeTopicRepository,
     FakeVoteRepository,
 )
@@ -34,11 +36,18 @@ def fake_vote_repo() -> FakeVoteRepository:
 
 
 @pytest.fixture
+def fake_publisher() -> FakeEventPublisher:
+    """Provide a fresh in-memory event publisher."""
+    return FakeEventPublisher()
+
+
+@pytest.fixture
 def client(
     fake_repo: FakeTopicRepository,
     fake_vote_repo: FakeVoteRepository,
+    fake_publisher: FakeEventPublisher,
 ) -> TestClient:
-    """Provide a test client wired to fake repositories."""
+    """Provide a test client wired to fake repositories and publisher."""
     app = create_app()
     app.dependency_overrides[get_create_topic_use_case] = lambda: CreateTopicUseCase(
         repository=fake_repo
@@ -51,4 +60,5 @@ def client(
         topic_repo=fake_repo,
         voting_service=VotingService(),
     )
+    app.dependency_overrides[get_event_publisher] = lambda: fake_publisher
     return TestClient(app)

@@ -4,6 +4,8 @@ import uuid
 
 from fastapi.testclient import TestClient
 
+from tests.unit.pulse_board.fakes import FakeEventPublisher
+
 
 def _create_topic(client: TestClient, content: str = "Test topic") -> str:
     """Create a topic and return its id."""
@@ -122,3 +124,70 @@ class TestCastVoteRoute:
         assert body["vote_status"] == "cancelled"
         assert body["user_vote"] is None
         assert body["new_score"] == 0
+
+
+class TestCastVoteBroadcast:
+    """Tests verifying that vote actions publish events."""
+
+    def test_cast_vote_broadcasts_score_update(
+        self,
+        client: TestClient,
+        fake_publisher: FakeEventPublisher,
+    ) -> None:
+        """Casting a vote should publish a score_update event."""
+        topic_id = _create_topic(client)
+
+        client.post(
+            f"/api/topics/{topic_id}/votes",
+            json={"fingerprint_id": "user-abc", "direction": "up"},
+        )
+
+        assert len(fake_publisher.score_updates) == 1
+        event = fake_publisher.score_updates[0]
+        assert str(event["topic_id"]) == topic_id
+        assert event["score"] == 1
+
+    def test_cast_vote_broadcasts_censure_on_threshold(
+        self,
+        client: TestClient,
+        fake_publisher: FakeEventPublisher,
+    ) -> None:
+        """Downvoting to censure threshold publishes score and censure."""
+        topic_id = _create_topic(client)
+        url = f"/api/topics/{topic_id}/votes"
+
+        # Cast 5 downvotes from different users to reach -5
+        for i in range(5):
+            client.post(
+                url,
+                json={
+                    "fingerprint_id": f"user-{i}",
+                    "direction": "down",
+                },
+            )
+
+        # Should have 5 score updates (one per vote)
+        assert len(fake_publisher.score_updates) == 5
+
+        # The last score update should show score == -5
+        last_update = fake_publisher.score_updates[-1]
+        assert last_update["score"] == -5
+
+        # Censure event should be published when threshold is reached
+        assert len(fake_publisher.censured_events) == 1
+        assert str(fake_publisher.censured_events[0]["topic_id"]) == topic_id
+
+    def test_cast_upvote_does_not_broadcast_censure(
+        self,
+        client: TestClient,
+        fake_publisher: FakeEventPublisher,
+    ) -> None:
+        """An upvote should not trigger a censure event."""
+        topic_id = _create_topic(client)
+
+        client.post(
+            f"/api/topics/{topic_id}/votes",
+            json={"fingerprint_id": "user-abc", "direction": "up"},
+        )
+
+        assert len(fake_publisher.censured_events) == 0

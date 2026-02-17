@@ -1,5 +1,7 @@
 """FastAPI dependency injection wiring."""
 
+from fastapi import Request
+
 from pulse_board.application.use_cases.cast_vote import CastVoteUseCase
 from pulse_board.application.use_cases.create_topic import (
     CreateTopicUseCase,
@@ -8,6 +10,7 @@ from pulse_board.application.use_cases.health_check import HealthCheckUseCase
 from pulse_board.application.use_cases.list_topics import (
     ListTopicsUseCase,
 )
+from pulse_board.domain.ports.event_publisher_port import EventPublisher
 from pulse_board.domain.services.voting_service import VotingService
 from pulse_board.infrastructure.database.connection import (
     get_database,
@@ -54,3 +57,8 @@ def get_cast_vote_use_case() -> CastVoteUseCase:
         topic_repo=_get_topic_repository(),
         voting_service=VotingService(),
     )
+
+
+def get_event_publisher(request: Request) -> EventPublisher:
+    """Provide the EventPublisher from app state."""
+    return request.app.state.connection_manager

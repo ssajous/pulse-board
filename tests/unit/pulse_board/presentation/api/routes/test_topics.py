@@ -3,7 +3,10 @@
 from fastapi.testclient import TestClient
 
 from pulse_board.domain.entities.topic import MAX_CONTENT_LENGTH
-from tests.unit.pulse_board.fakes import FakeTopicRepository
+from tests.unit.pulse_board.fakes import (
+    FakeEventPublisher,
+    FakeTopicRepository,
+)
 
 
 class TestCreateTopicRoute:
@@ -102,3 +105,32 @@ class TestListTopicsRoute:
         topic_ids = [t["id"] for t in list_resp.json()["topics"]]
 
         assert created_id in topic_ids
+
+
+class TestCreateTopicBroadcast:
+    """Tests verifying that topic creation publishes events."""
+
+    def test_create_topic_broadcasts_new_topic(
+        self,
+        client: TestClient,
+        fake_publisher: FakeEventPublisher,
+    ) -> None:
+        """Creating a topic should publish a new_topic event."""
+        response = client.post("/api/topics", json={"content": "Broadcast me"})
+        body = response.json()
+
+        assert len(fake_publisher.new_topic_events) == 1
+        event = fake_publisher.new_topic_events[0]
+        assert str(event["topic_id"]) == body["id"]
+        assert event["content"] == "Broadcast me"
+        assert event["score"] == 0
+
+    def test_create_invalid_topic_does_not_broadcast(
+        self,
+        client: TestClient,
+        fake_publisher: FakeEventPublisher,
+    ) -> None:
+        """A failed topic creation should not publish any event."""
+        client.post("/api/topics", json={"content": ""})
+
+        assert len(fake_publisher.new_topic_events) == 0

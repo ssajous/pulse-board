@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { AnimatePresence, motion } from "motion/react";
 import { useTopicsViewModel } from "@presentation/view-models";
 import { TopicCard } from "@presentation/components/topic-card";
 import { TopicListEmpty } from "./TopicListEmpty";
@@ -19,9 +20,23 @@ export const TopicList = observer(function TopicList() {
 
   return (
     <div id="topic-list" className="space-y-4">
-      {vm.sortedTopics.map((topic) => (
-        <TopicCard key={topic.id} topic={topic} />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {vm.sortedTopics.map((topic) => (
+          <motion.div
+            key={topic.id}
+            layout
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{
+              layout: { type: "spring", stiffness: 350, damping: 30 },
+              opacity: { duration: 0.2 },
+            }}
+          >
+            <TopicCard topic={topic} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 });
