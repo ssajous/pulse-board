@@ -265,8 +265,12 @@ export class TopicsViewModel {
 
   async submitTopic(content: string): Promise<boolean> {
     try {
-      await this._api.createTopic(content);
-      await this.fetchTopics();
+      const newTopic = await this._api.createTopic(content);
+      runInAction(() => {
+        if (!this.topics.some((t) => t.id === newTopic.id)) {
+          this.topics = [...this.topics, newTopic];
+        }
+      });
       this.showToast(
         "Topic published successfully",
         "success"

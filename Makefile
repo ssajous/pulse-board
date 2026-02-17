@@ -1,4 +1,4 @@
-.PHONY: help dev dev-backend dev-frontend test test-unit test-integration test-all test-e2e \
+.PHONY: help dev dev-backend dev-frontend test test-unit test-frontend test-integration test-all test-e2e \
 	infra-up infra-down docker-build docker-run clean version version-patch version-minor version-major \
 	lint format migrate
 
@@ -67,13 +67,17 @@ test: test-unit ## Run unit tests (alias)
 test-unit: ## Run unit tests
 	uv run pytest tests/unit -v
 
+test-frontend: ## Run frontend unit tests
+	cd frontend && source $$HOME/.nvm/nvm.sh && nvm use 22 && npx vitest run
+
 test-integration: ## Run integration tests
 	@$(MAKE) --no-print-directory infra-up
 	uv run pytest tests/integration -v
 
-test-all: ## Run all tests (unit + integration)
+test-all: ## Run all tests (unit + integration + frontend)
 	@$(MAKE) --no-print-directory infra-up
 	uv run pytest tests/ -v
+	@$(MAKE) --no-print-directory test-frontend
 
 test-e2e: ## Run end-to-end tests (placeholder)
 	@echo "E2E tests not yet configured"

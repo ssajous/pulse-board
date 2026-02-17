@@ -202,3 +202,152 @@ class TestPublishNewTopic:
         sent_message = ws.send_json.call_args[0][0]
         assert sent_message["type"] == "new_topic"
         assert sent_message["topic"]["created_at"] == "2026-01-01T00:00:00"
+
+
+class TestPublishNewTopicMultiClient:
+    """Tests that publish_new_topic reaches multiple clients."""
+
+    @pytest.mark.asyncio
+    async def test_publish_new_topic_sends_to_all_clients(
+        self,
+    ) -> None:
+        """Should send a new_topic message to all 3 connected clients."""
+        manager = ConnectionManager()
+        clients = [_make_mock_websocket() for _ in range(3)]
+        for ws in clients:
+            await manager.connect(ws)
+
+        topic_id = uuid.uuid4()
+        created_at = datetime(2026, 2, 17, 12, 0, 0, tzinfo=UTC)
+        await manager.publish_new_topic(
+            topic_id=topic_id,
+            content="Multi-client topic",
+            score=0,
+            created_at=created_at,
+        )
+
+        expected = {
+            "type": "new_topic",
+            "topic": {
+                "id": str(topic_id),
+                "content": "Multi-client topic",
+                "score": 0,
+                "created_at": "2026-02-17T12:00:00+00:00",
+            },
+        }
+        for ws in clients:
+            ws.send_json.assert_awaited_once_with(expected)
+
+    @pytest.mark.asyncio
+    async def test_publish_new_topic_skips_dead_client(
+        self,
+    ) -> None:
+        """Dead clients should be removed; live ones still receive."""
+        manager = ConnectionManager()
+        alive = _make_mock_websocket()
+        dead = _make_mock_websocket()
+        dead.send_json.side_effect = RuntimeError("closed")
+        await manager.connect(alive)
+        await manager.connect(dead)
+
+        topic_id = uuid.uuid4()
+        created_at = datetime(2026, 2, 17, 12, 0, 0, tzinfo=UTC)
+        await manager.publish_new_topic(
+            topic_id=topic_id,
+            content="Partial",
+            score=0,
+            created_at=created_at,
+        )
+
+        alive.send_json.assert_awaited_once()
+        assert dead not in manager._connections
+        assert alive in manager._connections
+
+
+class TestPublishScoreUpdateMultiClient:
+    """Tests that publish_score_update reaches multiple clients."""
+
+    @pytest.mark.asyncio
+    async def test_publish_score_update_sends_to_all_clients(
+        self,
+    ) -> None:
+        """Should send score_update to both connected clients."""
+        manager = ConnectionManager()
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+        await manager.connect(ws1)
+        await manager.connect(ws2)
+
+        topic_id = uuid.uuid4()
+        await manager.publish_score_update(topic_id, score=7)
+
+        expected = {
+            "type": "score_update",
+            "topic_id": str(topic_id),
+            "score": 7,
+        }
+        ws1.send_json.assert_awaited_once_with(expected)
+        ws2.send_json.assert_awaited_once_with(expected)
+
+    @pytest.mark.asyncio
+    async def test_publish_score_update_skips_dead_client(
+        self,
+    ) -> None:
+        """Dead clients should be removed during score_update."""
+        manager = ConnectionManager()
+        alive = _make_mock_websocket()
+        dead = _make_mock_websocket()
+        dead.send_json.side_effect = RuntimeError("closed")
+        await manager.connect(alive)
+        await manager.connect(dead)
+
+        topic_id = uuid.uuid4()
+        await manager.publish_score_update(topic_id, score=3)
+
+        alive.send_json.assert_awaited_once()
+        assert dead not in manager._connections
+        assert alive in manager._connections
+
+
+class TestPublishTopicCensuredMultiClient:
+    """Tests that publish_topic_censured reaches multiple clients."""
+
+    @pytest.mark.asyncio
+    async def test_publish_topic_censured_sends_to_all_clients(
+        self,
+    ) -> None:
+        """Should send topic_censured to both connected clients."""
+        manager = ConnectionManager()
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+        await manager.connect(ws1)
+        await manager.connect(ws2)
+
+        topic_id = uuid.uuid4()
+        await manager.publish_topic_censured(topic_id)
+
+        expected = {
+            "type": "topic_censured",
+            "topic_id": str(topic_id),
+        }
+        ws1.send_json.assert_awaited_once_with(expected)
+        ws2.send_json.assert_awaited_once_with(expected)
+
+    @pytest.mark.asyncio
+    async def test_publish_topic_censured_skips_dead_client(
+        self,
+    ) -> None:
+        """Dead clients should be removed during topic_censured."""
+        manager = ConnectionManager()
+        alive = _make_mock_websocket()
+        dead = _make_mock_websocket()
+        dead.send_json.side_effect = RuntimeError("closed")
+        await manager.connect(alive)
+        await manager.connect(dead)
+
+        topic_id = uuid.uuid4()
+        await manager.publish_topic_censured(topic_id)
+
+        alive.send_json.assert_awaited_once()
+        assert dead not in manager._connections
+        assert alive in manager._connections

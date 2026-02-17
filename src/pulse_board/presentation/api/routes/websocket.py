@@ -28,4 +28,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    except Exception:
+        logger.warning("WebSocket connection error", exc_info=True)
+    finally:
         await manager.disconnect(websocket)

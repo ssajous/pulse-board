@@ -1,5 +1,6 @@
 """Vote management routes."""
 
+import asyncio
 import logging
 from uuid import UUID
 
@@ -45,7 +46,8 @@ async def cast_vote(
     """
     direction = UPVOTE if request.direction == "up" else DOWNVOTE
     try:
-        result = use_case.execute(
+        result = await asyncio.to_thread(
+            use_case.execute,
             topic_id=topic_id,
             fingerprint_id=request.fingerprint_id,
             direction=direction,

@@ -1,5 +1,6 @@
 """Topic management routes."""
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -40,7 +41,7 @@ async def create_topic(
 ) -> TopicResponse:
     """Create a new topic."""
     try:
-        result = use_case.execute(request.content)
+        result = await asyncio.to_thread(use_case.execute, request.content)
     except ValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
