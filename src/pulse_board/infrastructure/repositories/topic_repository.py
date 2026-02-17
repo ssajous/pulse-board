@@ -9,6 +9,7 @@ from pulse_board.domain.entities.topic import Topic
 from pulse_board.domain.ports.topic_repository_port import (
     TopicRepository,
 )
+from pulse_board.domain.services.voting_service import CENSURE_THRESHOLD
 from pulse_board.infrastructure.database.models.topic_model import (
     TopicModel,
 )
@@ -30,9 +31,13 @@ class SQLAlchemyTopicRepository(TopicRepository):
             return self._to_entity(model)
 
     def list_active(self) -> list[Topic]:
-        """Return topics with score > -5."""
+        """Return topics whose score is above the censure threshold."""
         with self._session_factory() as session:
-            models = session.query(TopicModel).filter(TopicModel.score > -5).all()
+            models = (
+                session.query(TopicModel)
+                .filter(TopicModel.score > CENSURE_THRESHOLD)
+                .all()
+            )
             return [self._to_entity(m) for m in models]
 
     def get_by_id(self, id: uuid.UUID) -> Topic | None:
@@ -60,11 +65,9 @@ class SQLAlchemyTopicRepository(TopicRepository):
                 update(TopicModel)
                 .where(TopicModel.id == id)
                 .values(score=TopicModel.score + delta)
-                .returning(TopicModel)
             )
-            row = result.fetchone()
             session.commit()
-            if row is None:
+            if result.rowcount == 0:
                 return None
             model = session.get(TopicModel, id)
             return self._to_entity(model) if model else None

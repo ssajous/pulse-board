@@ -87,6 +87,20 @@ export class TopicsViewModel {
     return this.isVoting.has(topicId);
   }
 
+  private setTopicScore(topicId: string, score: number): void {
+    this.topics = this.topics.map((t) =>
+      t.id === topicId ? { ...t, score } : t
+    );
+  }
+
+  private setUserVote(topicId: string, vote: number | null): void {
+    if (vote !== null) {
+      this.userVotes.set(topicId, vote);
+    } else {
+      this.userVotes.delete(topicId);
+    }
+  }
+
   async castVote(
     topicId: string,
     direction: "up" | "down"
@@ -106,19 +120,12 @@ export class TopicsViewModel {
 
     const delta = computeScoreDelta(prevVote, direction);
     const newValue = direction === "up" ? 1 : -1;
+    const optimisticVote = prevVote === newValue ? null : newValue;
 
     // Optimistic update
     this.isVoting.add(topicId);
-    this.topics = this.topics.map((t) =>
-      t.id === topicId
-        ? { ...t, score: t.score + delta }
-        : t
-    );
-    if (prevVote === newValue) {
-      this.userVotes.delete(topicId);
-    } else {
-      this.userVotes.set(topicId, newValue);
-    }
+    this.setTopicScore(topicId, topic.score + delta);
+    this.setUserVote(topicId, optimisticVote);
 
     try {
       const response = await this._voteApi.castVote(
@@ -127,16 +134,8 @@ export class TopicsViewModel {
         direction
       );
       runInAction(() => {
-        this.topics = this.topics.map((t) =>
-          t.id === topicId
-            ? { ...t, score: response.new_score }
-            : t
-        );
-        if (response.user_vote !== null) {
-          this.userVotes.set(topicId, response.user_vote);
-        } else {
-          this.userVotes.delete(topicId);
-        }
+        this.setTopicScore(topicId, response.new_score);
+        this.setUserVote(topicId, response.user_vote);
         this.isVoting.delete(topicId);
 
         if (response.censured) {
@@ -155,16 +154,8 @@ export class TopicsViewModel {
       });
     } catch (e) {
       runInAction(() => {
-        this.topics = this.topics.map((t) =>
-          t.id === topicId
-            ? { ...t, score: prevScore }
-            : t
-        );
-        if (prevVote !== null) {
-          this.userVotes.set(topicId, prevVote);
-        } else {
-          this.userVotes.delete(topicId);
-        }
+        this.setTopicScore(topicId, prevScore);
+        this.setUserVote(topicId, prevVote);
         this.isVoting.delete(topicId);
         this.showToast(
           extractErrorMessage(e, "Failed to cast vote"),

@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from pulse_board.application.use_cases.cast_vote import CastVoteUseCase
+from pulse_board.domain.entities.vote import DOWNVOTE, UPVOTE
 from pulse_board.domain.exceptions import (
     DuplicateVoteError,
     EntityNotFoundError,
@@ -36,7 +37,7 @@ def cast_vote(
     is cancelled. If they voted in the opposite direction, the
     vote is toggled.
     """
-    direction = 1 if request.direction == "up" else -1
+    direction = UPVOTE if request.direction == "up" else DOWNVOTE
     try:
         result = use_case.execute(
             topic_id=topic_id,
