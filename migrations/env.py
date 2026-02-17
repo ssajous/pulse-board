@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from pulse_board.infrastructure.config.settings import get_settings
 from pulse_board.infrastructure.database.base import Base
+from pulse_board.infrastructure.database.models.topic_model import TopicModel  # noqa: F401
 
 config = context.config
 
