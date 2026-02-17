@@ -24,6 +24,19 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     log_level: str = "INFO"
 
+    # Security
+    test_mode_secret: str = ""
+
+    # WebSocket
+    ws_max_size: int = 1024
+    ws_max_connections: int = 1000
+    ws_max_connections_per_ip: int = 10
+
+    @property
+    def allowed_ws_origins(self) -> set[str]:
+        """Get the set of allowed WebSocket origins from cors_origins."""
+        return {o.strip() for o in self.cors_origins.split(",")}
+
     @property
     def effective_database_url(self) -> str:
         """Get the database URL, constructing from parts if not explicitly set."""

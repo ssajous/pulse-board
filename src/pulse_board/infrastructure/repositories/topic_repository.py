@@ -67,7 +67,7 @@ class SQLAlchemyTopicRepository(TopicRepository):
                 .values(score=TopicModel.score + delta)
             )
             session.commit()
-            if result.rowcount == 0:
+            if result.rowcount == 0:  # type: ignore[union-attr]
                 return None
             model = session.get(TopicModel, id)
             return self._to_entity(model) if model else None

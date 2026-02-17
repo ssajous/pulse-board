@@ -1,0 +1,57 @@
+"""Tests for the WebSocket endpoint route."""
+
+import asyncio
+
+from fastapi.testclient import TestClient
+
+from pulse_board.presentation.api.app import create_app
+
+
+class TestWebSocketEndpoint:
+    """Tests for the /ws WebSocket endpoint."""
+
+    def test_websocket_connect_and_disconnect(self) -> None:
+        """Should connect to /ws and disconnect without errors."""
+        app = create_app()
+        client = TestClient(app)
+
+        with client.websocket_connect("/ws") as ws:
+            ws.close()
+
+    def test_websocket_receives_broadcast(self) -> None:
+        """Client should receive messages broadcast via the manager."""
+        app = create_app()
+        client = TestClient(app)
+
+        with client.websocket_connect("/ws") as ws:
+            manager = app.state.connection_manager
+            asyncio.get_event_loop().run_until_complete(
+                manager.broadcast({"type": "test", "payload": "hello"})
+            )
+
+            data = ws.receive_json()
+            assert data == {"type": "test", "payload": "hello"}
+
+    def test_websocket_multi_client_broadcast(self) -> None:
+        """Two clients should both receive the same broadcast."""
+        app = create_app()
+        client = TestClient(app)
+
+        with client.websocket_connect("/ws") as ws1:
+            with client.websocket_connect("/ws") as ws2:
+                manager = app.state.connection_manager
+                asyncio.get_event_loop().run_until_complete(
+                    manager.broadcast({"type": "multi", "payload": "both"})
+                )
+
+                data1 = ws1.receive_json()
+                data2 = ws2.receive_json()
+
+                assert data1 == {
+                    "type": "multi",
+                    "payload": "both",
+                }
+                assert data2 == {
+                    "type": "multi",
+                    "payload": "both",
+                }

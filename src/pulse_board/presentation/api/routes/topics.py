@@ -1,5 +1,8 @@
 """Topic management routes."""
 
+import asyncio
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from pulse_board.application.use_cases.create_topic import (
@@ -9,8 +12,10 @@ from pulse_board.application.use_cases.list_topics import (
     ListTopicsUseCase,
 )
 from pulse_board.domain.exceptions import ValidationError
+from pulse_board.domain.ports.event_publisher_port import EventPublisher
 from pulse_board.presentation.api.dependencies import (
     get_create_topic_use_case,
+    get_event_publisher,
     get_list_topics_use_case,
 )
 from pulse_board.presentation.api.schemas.topics import (
@@ -18,6 +23,8 @@ from pulse_board.presentation.api.schemas.topics import (
     TopicListResponse,
     TopicResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/topics", tags=["topics"])
 
@@ -27,18 +34,33 @@ router = APIRouter(prefix="/api/topics", tags=["topics"])
     response_model=TopicResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_topic(
+async def create_topic(
     request: CreateTopicRequest,
     use_case: CreateTopicUseCase = Depends(get_create_topic_use_case),
+    publisher: EventPublisher = Depends(get_event_publisher),
 ) -> TopicResponse:
     """Create a new topic."""
     try:
-        result = use_case.execute(request.content)
+        result = await asyncio.to_thread(use_case.execute, request.content)
     except ValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=exc.message,
         ) from exc
+
+    try:
+        await publisher.publish_new_topic(
+            result.id,
+            result.content,
+            result.score,
+            result.created_at,
+        )
+    except Exception:
+        logger.warning(
+            "Failed to broadcast new topic",
+            exc_info=True,
+        )
+
     return TopicResponse(
         id=str(result.id),
         content=result.content,

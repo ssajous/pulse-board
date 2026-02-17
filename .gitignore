@@ -211,3 +211,10 @@ __marimo__/
 .claude/tasks/
 .claude/todos/
 .claude/*.local.md
+.claude/agent-memory/
+
+# Playwright
+test-results/
+frontend/test-results/
+playwright-report/
+blob-report/
