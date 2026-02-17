@@ -121,8 +121,11 @@ export class TopicsViewModel {
     if (this._ws) {
       this._ws.onMessage(this.handleWebSocketMessage);
       this._ws.onReconnect(this.handleReconnect);
-      this._ws.connect(buildWebSocketUrl());
     }
+  }
+
+  connectWebSocket(): void {
+    this._ws?.connect(buildWebSocketUrl());
   }
 
   get sortedTopics(): Topic[] {
@@ -297,6 +300,7 @@ export class TopicsViewModel {
   }
 
   private handleWebSocketMessage(data: unknown): void {
+    console.log("WebSocket message received:", data);
     if (!isWebSocketMessage(data)) return;
 
     switch (data.type) {

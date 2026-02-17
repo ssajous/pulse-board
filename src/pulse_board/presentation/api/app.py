@@ -1,5 +1,8 @@
 """FastAPI application factory."""
 
+import logging
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -45,5 +48,14 @@ def create_app() -> FastAPI:
     app.include_router(topics_router)
     app.include_router(votes_router)
     app.include_router(ws_router)
+
+    if os.environ.get("PULSE_BOARD_TEST_MODE"):
+        from pulse_board.presentation.api.routes.test_utils import (
+            router as test_router,
+        )
+
+        app.include_router(test_router)
+        logger = logging.getLogger(__name__)
+        logger.warning("Test mode enabled: test utility endpoints active")
 
     return app

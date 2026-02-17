@@ -120,7 +120,7 @@ describe("TopicsViewModel", () => {
       const api = createMockApi();
       const { ws } = createMockWs();
 
-      const _vm = new TopicsViewModel(
+      const vm = new TopicsViewModel(
         api,
         undefined,
         undefined,
@@ -129,6 +129,9 @@ describe("TopicsViewModel", () => {
 
       expect(ws.onMessage).toHaveBeenCalledTimes(1);
       expect(ws.onReconnect).toHaveBeenCalledTimes(1);
+      expect(ws.connect).toHaveBeenCalledTimes(0);
+
+      vm.connectWebSocket();
       expect(ws.connect).toHaveBeenCalledTimes(1);
     });
   });

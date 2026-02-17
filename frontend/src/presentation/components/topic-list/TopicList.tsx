@@ -15,8 +15,21 @@ function LoadingSpinner() {
 export const TopicList = observer(function TopicList() {
   const vm = useTopicsViewModel();
 
-  if (vm.isLoading) return <LoadingSpinner />;
-  if (vm.isEmpty) return <TopicListEmpty />;
+  if (vm.isLoading) {
+    return (
+      <div id="topic-list">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (vm.isEmpty) {
+    return (
+      <div id="topic-list">
+        <TopicListEmpty />
+      </div>
+    );
+  }
 
   return (
     <div id="topic-list" className="space-y-4">

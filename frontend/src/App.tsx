@@ -29,6 +29,7 @@ function App() {
   );
 
   useEffect(() => {
+    vm.connectWebSocket();
     return () => vm.dispose();
   }, [vm]);
 

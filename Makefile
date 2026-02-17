@@ -79,8 +79,13 @@ test-all: ## Run all tests (unit + integration + frontend)
 	uv run pytest tests/ -v
 	@$(MAKE) --no-print-directory test-frontend
 
-test-e2e: ## Run end-to-end tests (placeholder)
-	@echo "E2E tests not yet configured"
+test-e2e: ## Run end-to-end tests
+	@$(MAKE) --no-print-directory infra-up
+	@$(MAKE) --no-print-directory migrate
+	cd frontend && source $$HOME/.nvm/nvm.sh && nvm use 22 && \
+		NODE_PATH=node_modules \
+		PULSE_BOARD_TEST_MODE=true \
+		npx playwright test --config ../playwright.config.ts
 
 # ──────────────────────────────────────────────
 # Code Quality

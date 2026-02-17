@@ -59,7 +59,7 @@ export class WebSocketClient implements WebSocketPort {
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = (): void => {
-      console.log("WebSocket connected");
+      console.log("WebSocket connected to", this.url);
       const wasReconnect = this.reconnectAttempts > 0;
       this.reconnectAttempts = 0;
 

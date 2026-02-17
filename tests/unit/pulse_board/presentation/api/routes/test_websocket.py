@@ -41,9 +41,7 @@ class TestWebSocketEndpoint:
             with client.websocket_connect("/ws") as ws2:
                 manager = app.state.connection_manager
                 asyncio.get_event_loop().run_until_complete(
-                    manager.broadcast(
-                        {"type": "multi", "payload": "both"}
-                    )
+                    manager.broadcast({"type": "multi", "payload": "both"})
                 )
 
                 data1 = ws1.receive_json()

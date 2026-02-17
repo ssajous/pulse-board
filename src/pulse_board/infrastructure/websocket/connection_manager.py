@@ -58,6 +58,12 @@ class ConnectionManager(EventPublisher):
         async with self._lock:
             connections = set(self._connections)
 
+        logger.info(
+            "Broadcasting message type=%s to %d connections",
+            message.get("type", "unknown"),
+            len(connections),
+        )
+
         dead: set[WebSocket] = set()
         for ws in connections:
             try:
