@@ -1,5 +1,6 @@
 """Shared fake implementations for testing."""
 
+import dataclasses
 import uuid
 
 from pulse_board.domain.entities.topic import Topic
@@ -25,3 +26,11 @@ class FakeTopicRepository(TopicRepository):
 
     def delete(self, id: uuid.UUID) -> None:
         self._topics.pop(id, None)
+
+    def update_score(self, id: uuid.UUID, delta: int) -> Topic | None:
+        topic = self._topics.get(id)
+        if topic is None:
+            return None
+        updated = dataclasses.replace(topic, score=topic.score + delta)
+        self._topics[id] = updated
+        return updated

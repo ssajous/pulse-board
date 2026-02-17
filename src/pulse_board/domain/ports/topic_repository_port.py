@@ -54,3 +54,16 @@ class TopicRepository(ABC):
             id: The UUID of the topic to delete.
         """
         ...
+
+    @abstractmethod
+    def update_score(self, id: uuid.UUID, delta: int) -> Topic | None:
+        """Update a topic's score by a relative delta.
+
+        Args:
+            id: The UUID of the topic to update.
+            delta: The score change to apply (positive or negative).
+
+        Returns:
+            The updated Topic, or None if not found.
+        """
+        ...
