@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {
+    "conventional-commits@stans-demo-marketplace": true,
+    "dev-agents@stans-demo-marketplace": true,
+    "git-back-to-main@stans-demo-marketplace": true,
+    "project-docs@stans-demo-marketplace": true,
+    "smart-prd@stans-demo-marketplace": true,
+    "frontend-design@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true
+  }
+}
