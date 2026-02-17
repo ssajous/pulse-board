@@ -1,19 +1,10 @@
 import { test } from "./fixtures/app.fixture";
 import { resetDatabase, createTopicViaApi } from "./helpers/api.helper";
 import {
+  reloadAndWaitForWs,
   waitForTopicToAppear,
   waitForScoreUpdate,
 } from "./helpers/wait.helper";
-import type { Page } from "@playwright/test";
-
-async function reloadAndWaitForWs(page: Page): Promise<void> {
-  const wsReady = page.waitForEvent("console", {
-    predicate: (msg) => msg.text().includes("WebSocket connected to"),
-    timeout: 10_000,
-  });
-  await page.reload();
-  await wsReady;
-}
 
 test.describe("Vote broadcast", () => {
   test.beforeEach(async () => {

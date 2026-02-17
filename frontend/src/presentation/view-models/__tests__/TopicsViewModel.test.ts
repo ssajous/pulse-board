@@ -109,7 +109,7 @@ describe("TopicsViewModel", () => {
   describe("constructor", () => {
     it("calls fetchTopics on construction", async () => {
       const api = createMockApi([makeTopic()]);
-      const _vm = new TopicsViewModel(api);
+      new TopicsViewModel(api);
 
       await flushMicrotasks();
 
