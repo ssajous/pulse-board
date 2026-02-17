@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { TopicsViewModel } from "@presentation/view-models";
-import { TopicsViewModelProvider } from "@presentation/view-models";
 import { TopicApiClient } from "@infrastructure/api/topicApiClient";
+import {
+  TopicsViewModel,
+  TopicsViewModelProvider,
+} from "@presentation/view-models";
 import { Header } from "@presentation/components/layout";
 import { TopicForm } from "@presentation/components/topic-form";
 import { TopicList, TopicListHeader } from "@presentation/components/topic-list";

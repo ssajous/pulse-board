@@ -14,7 +14,7 @@ export const TopicForm = observer(function TopicForm() {
 
   const charCount = content.length;
   const isOverLimit = charCount > MAX_CHARS;
-  const isEmpty = charCount === 0 || content.trim().length === 0;
+  const isEmpty = content.trim().length === 0;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

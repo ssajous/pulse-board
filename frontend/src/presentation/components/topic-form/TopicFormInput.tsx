@@ -19,11 +19,9 @@ export const TopicFormInput = memo(function TopicFormInput({
   isOverLimit,
   charCount,
 }: TopicFormInputProps) {
-  const borderClass = isOverLimit
-    ? "border-rose-500 ring-rose-500/20"
-    : isFocused
-      ? "border-indigo-500 ring-2 ring-indigo-500/20"
-      : "border-slate-600";
+  let borderClass = "border-slate-600";
+  if (isOverLimit) borderClass = "border-rose-500 ring-rose-500/20";
+  else if (isFocused) borderClass = "border-indigo-500 ring-2 ring-indigo-500/20";
 
   return (
     <div className={`relative rounded-lg border transition-all duration-200 ${borderClass}`}>

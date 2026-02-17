@@ -56,17 +56,12 @@ export class TopicsViewModel {
     try {
       await this._api.createTopic(content);
       await this.fetchTopics();
-      runInAction(() => {
-        this.showToast("Topic published successfully", "success");
-      });
+      this.showToast("Topic published successfully", "success");
       return true;
     } catch (e) {
-      runInAction(() => {
-        this.showToast(
-          e instanceof Error ? e.message : "Failed to create topic",
-          "error",
-        );
-      });
+      const message =
+        e instanceof Error ? e.message : "Failed to create topic";
+      this.showToast(message, "error");
       return false;
     }
   }

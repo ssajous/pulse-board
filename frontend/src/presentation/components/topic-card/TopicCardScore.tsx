@@ -11,12 +11,9 @@ const BTN_CLASS =
 export const TopicCardScore = memo(function TopicCardScore({
   score,
 }: TopicCardScoreProps) {
-  const scoreColor =
-    score > 0
-      ? "text-emerald-400"
-      : score < 0
-        ? "text-rose-400"
-        : "text-slate-500";
+  let scoreColor = "text-slate-500";
+  if (score > 0) scoreColor = "text-emerald-400";
+  else if (score < 0) scoreColor = "text-rose-400";
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-slate-700 bg-slate-900/30 p-4 sm:w-20 sm:flex-col sm:justify-center sm:border-b-0 sm:border-r">
