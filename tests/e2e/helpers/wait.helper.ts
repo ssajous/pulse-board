@@ -1,6 +1,16 @@
 import { Page, expect } from "@playwright/test";
 
 const DEFAULT_TIMEOUT = 5_000;
+const WS_CONNECT_TIMEOUT = 10_000;
+
+export async function reloadAndWaitForWs(page: Page): Promise<void> {
+  const wsReady = page.waitForEvent("console", {
+    predicate: (msg) => msg.text().includes("WebSocket connected to"),
+    timeout: WS_CONNECT_TIMEOUT,
+  });
+  await page.reload();
+  await wsReady;
+}
 
 export async function waitForTopicToAppear(
   page: Page,

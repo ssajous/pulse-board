@@ -1,4 +1,4 @@
-.PHONY: help dev dev-backend dev-frontend test test-unit test-frontend test-integration test-all test-e2e \
+.PHONY: help dev dev-backend dev-frontend test test-unit test-frontend test-integration test-all test-coverage test-e2e \
 	infra-up infra-down docker-build docker-run clean version version-patch version-minor version-major \
 	lint format migrate
 
@@ -64,8 +64,8 @@ migrate: ## Run database migrations
 
 test: test-unit ## Run unit tests (alias)
 
-test-unit: ## Run unit tests
-	uv run pytest tests/unit -v
+test-unit: ## Run unit tests with coverage
+	uv run pytest tests/unit -v --cov=pulse_board --cov-report=term-missing
 
 test-frontend: ## Run frontend unit tests
 	cd frontend && source $$HOME/.nvm/nvm.sh && nvm use 22 && npx vitest run
@@ -74,10 +74,14 @@ test-integration: ## Run integration tests
 	@$(MAKE) --no-print-directory infra-up
 	uv run pytest tests/integration -v
 
-test-all: ## Run all tests (unit + integration + frontend)
+test-all: ## Run all tests (unit + integration + frontend) with coverage
 	@$(MAKE) --no-print-directory infra-up
-	uv run pytest tests/ -v
+	uv run pytest tests/ -v --cov=pulse_board --cov-report=term-missing --cov-report=html
 	@$(MAKE) --no-print-directory test-frontend
+
+test-coverage: ## Run Python tests with full coverage report
+	@$(MAKE) --no-print-directory infra-up
+	uv run pytest tests/ -v --cov=pulse_board --cov-report=term-missing --cov-report=html
 
 test-e2e: ## Run end-to-end tests
 	@$(MAKE) --no-print-directory infra-up
@@ -91,10 +95,11 @@ test-e2e: ## Run end-to-end tests
 # Code Quality
 # ──────────────────────────────────────────────
 
-lint: ## Run linters (ruff + pyright)
+lint: ## Run linters (ruff + pyright + eslint)
 	uv run ruff check .
 	uv run ruff format . --check
 	uv run pyright
+	cd frontend && source $$HOME/.nvm/nvm.sh && nvm use 22 && npm run lint
 
 format: ## Auto-format code
 	uv run ruff check . --fix
@@ -117,7 +122,7 @@ docker-run: ## Run application in Docker
 
 clean: ## Remove all build artifacts and infrastructure
 	docker compose down -v 2>/dev/null || true
-	rm -rf .venv __pycache__ .pytest_cache .ruff_cache .mypy_cache
+	rm -rf .venv __pycache__ .pytest_cache .ruff_cache .mypy_cache htmlcov
 	rm -rf frontend/node_modules frontend/dist frontend/.vite
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
