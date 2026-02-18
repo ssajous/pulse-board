@@ -245,6 +245,13 @@ The production compose file (`docker-compose.prod.yml`) includes health checks, 
 | `make docker-prod-down` | Stop production stack |
 | `make docker-prod-logs` | Tail production logs |
 
+## Documentation
+
+Detailed documentation lives in the `docs/` directory:
+
+- [Testing Strategy](docs/testing/testing-strategy.md) -- testing philosophy, pyramid, and coverage goals
+- [Test Conventions](docs/testing/test-conventions.md) -- naming, patterns, and step-by-step checklists for adding tests
+
 ## Architecture Decision Records
 
 Design decisions are documented as ADRs in the `docs/adr/` directory:
