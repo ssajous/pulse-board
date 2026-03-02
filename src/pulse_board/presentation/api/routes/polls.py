@@ -243,10 +243,14 @@ async def activate_poll(
         question=result.question,
         poll_type="multiple_choice",
         options=[
-            PollOptionSchema(id=opt["id"], text=opt["text"]) for opt in result.options
+            PollOptionSchema(
+                id=opt["id"],
+                text=opt["text"],
+            )
+            for opt in result.options
         ],
         is_active=result.is_active,
-        created_at=None,  # type: ignore[arg-type]
+        created_at=result.created_at,
     )
 
 

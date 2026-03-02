@@ -2,6 +2,7 @@
 
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from pulse_board.domain.exceptions import EntityNotFoundError
 from pulse_board.domain.ports.poll_repository_port import PollRepository
@@ -24,6 +25,7 @@ class ActivatePollResult:
     question: str
     is_active: bool
     options: list[dict[str, str]]
+    created_at: datetime
 
 
 class ActivatePollUseCase:
@@ -85,4 +87,5 @@ class ActivatePollUseCase:
             question=updated.question,
             is_active=updated.is_active,
             options=[{"id": str(opt.id), "text": opt.text} for opt in updated.options],
+            created_at=updated.created_at,
         )

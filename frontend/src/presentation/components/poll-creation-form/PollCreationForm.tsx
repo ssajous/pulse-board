@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type React from "react";
 import { observer } from "mobx-react-lite";
 import { BarChart3 } from "lucide-react";
 import { usePollCreationViewModel } from "@presentation/view-models";
@@ -18,7 +18,7 @@ export const PollCreationForm = observer(
   }: PollCreationFormProps) {
     const vm = usePollCreationViewModel();
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       await vm.submit(eventId);
       if (vm.createdPoll) {
