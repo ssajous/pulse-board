@@ -47,6 +47,41 @@ class ConnectionManager(EventPublisher):
                 count += 1
         return count
 
+    async def _accept_connection(
+        self,
+        websocket: WebSocket,
+    ) -> bool:
+        """Check limits, accept WebSocket, and register globally.
+
+        Returns True if the connection was accepted, False if rejected.
+        Must be called while holding ``self._lock``.
+        """
+        if len(self._connections) >= self._max_connections:
+            logger.warning(
+                "Max connections (%d) reached, rejecting",
+                self._max_connections,
+            )
+            await websocket.close(code=1013)
+            return False
+
+        client_ip = websocket.client.host if websocket.client else "unknown"
+        if (
+            client_ip != "unknown"
+            and self._count_connections_for_ip(client_ip)
+            >= self._max_connections_per_ip
+        ):
+            logger.warning(
+                "Per-IP limit (%d) reached for %s, rejecting",
+                self._max_connections_per_ip,
+                client_ip,
+            )
+            await websocket.close(code=1013)
+            return False
+
+        await websocket.accept()
+        self._connections.add(websocket)
+        return True
+
     async def connect(self, websocket: WebSocket) -> None:
         """Accept a WebSocket and register, enforcing limits.
 
@@ -56,35 +91,12 @@ class ConnectionManager(EventPublisher):
         wasting resources.
         """
         async with self._lock:
-            if len(self._connections) >= self._max_connections:
-                logger.warning(
-                    "Max connections (%d) reached, rejecting",
-                    self._max_connections,
-                )
-                await websocket.close(code=1013)
-                return
-
-            client_ip = websocket.client.host if websocket.client else "unknown"
-            if (
-                client_ip != "unknown"
-                and self._count_connections_for_ip(client_ip)
-                >= self._max_connections_per_ip
-            ):
-                logger.warning(
-                    "Per-IP limit (%d) reached for %s, rejecting",
-                    self._max_connections_per_ip,
-                    client_ip,
-                )
-                await websocket.close(code=1013)
-                return
-
-            await websocket.accept()
-            self._connections.add(websocket)
-
-        logger.info(
-            "WebSocket connected. Active connections: %d",
-            len(self._connections),
-        )
+            accepted = await self._accept_connection(websocket)
+        if accepted:
+            logger.info(
+                "WebSocket connected. Active connections: %d",
+                len(self._connections),
+            )
 
     async def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket from the active connection set."""
@@ -121,6 +133,51 @@ class ConnectionManager(EventPublisher):
             async with self._lock:
                 self._connections -= dead
 
+    # ------------------------------------------------------------------
+    # Message builders
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _score_update_message(
+        topic_id: uuid.UUID,
+        score: int,
+    ) -> dict[str, Any]:
+        return {
+            "type": "score_update",
+            "topic_id": str(topic_id),
+            "score": score,
+        }
+
+    @staticmethod
+    def _topic_censured_message(
+        topic_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        return {
+            "type": "topic_censured",
+            "topic_id": str(topic_id),
+        }
+
+    @staticmethod
+    def _new_topic_message(
+        topic_id: uuid.UUID,
+        content: str,
+        score: int,
+        created_at: datetime,
+    ) -> dict[str, Any]:
+        return {
+            "type": "new_topic",
+            "topic": {
+                "id": str(topic_id),
+                "content": content,
+                "score": score,
+                "created_at": created_at.isoformat(),
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Global publish methods
+    # ------------------------------------------------------------------
+
     async def publish_score_update(
         self,
         topic_id: uuid.UUID,
@@ -128,11 +185,7 @@ class ConnectionManager(EventPublisher):
     ) -> None:
         """Broadcast a score change for a topic."""
         await self.broadcast(
-            {
-                "type": "score_update",
-                "topic_id": str(topic_id),
-                "score": score,
-            }
+            self._score_update_message(topic_id, score),
         )
 
     async def publish_topic_censured(
@@ -141,10 +194,7 @@ class ConnectionManager(EventPublisher):
     ) -> None:
         """Broadcast that a topic has been censured."""
         await self.broadcast(
-            {
-                "type": "topic_censured",
-                "topic_id": str(topic_id),
-            }
+            self._topic_censured_message(topic_id),
         )
 
     async def publish_new_topic(
@@ -156,15 +206,7 @@ class ConnectionManager(EventPublisher):
     ) -> None:
         """Broadcast a newly created topic."""
         await self.broadcast(
-            {
-                "type": "new_topic",
-                "topic": {
-                    "id": str(topic_id),
-                    "content": content,
-                    "score": score,
-                    "created_at": created_at.isoformat(),
-                },
-            }
+            self._new_topic_message(topic_id, content, score, created_at),
         )
 
     # ------------------------------------------------------------------
@@ -183,39 +225,18 @@ class ConnectionManager(EventPublisher):
         1013 when a limit is reached.
         """
         async with self._lock:
-            if len(self._connections) >= self._max_connections:
-                logger.warning(
-                    "Max connections (%d) reached, rejecting",
-                    self._max_connections,
-                )
-                await websocket.close(code=1013)
-                return
+            accepted = await self._accept_connection(websocket)
+            if accepted:
+                if channel not in self._channels:
+                    self._channels[channel] = set()
+                self._channels[channel].add(websocket)
 
-            client_ip = websocket.client.host if websocket.client else "unknown"
-            if (
-                client_ip != "unknown"
-                and self._count_connections_for_ip(client_ip)
-                >= self._max_connections_per_ip
-            ):
-                logger.warning(
-                    "Per-IP limit (%d) reached for %s, rejecting",
-                    self._max_connections_per_ip,
-                    client_ip,
-                )
-                await websocket.close(code=1013)
-                return
-
-            await websocket.accept()
-            self._connections.add(websocket)
-            if channel not in self._channels:
-                self._channels[channel] = set()
-            self._channels[channel].add(websocket)
-
-        logger.info(
-            "WebSocket connected to channel %s. Active: %d",
-            channel,
-            len(self._connections),
-        )
+        if accepted:
+            logger.info(
+                "WebSocket connected to channel %s. Active: %d",
+                channel,
+                len(self._connections),
+            )
 
     async def disconnect_from_channel(
         self,
@@ -284,11 +305,7 @@ class ConnectionManager(EventPublisher):
         """Broadcast a score update to a specific channel."""
         await self.broadcast_to_channel(
             channel,
-            {
-                "type": "score_update",
-                "topic_id": str(topic_id),
-                "score": score,
-            },
+            self._score_update_message(topic_id, score),
         )
 
     async def publish_topic_censured_to_channel(
@@ -299,10 +316,7 @@ class ConnectionManager(EventPublisher):
         """Broadcast a topic censure to a specific channel."""
         await self.broadcast_to_channel(
             channel,
-            {
-                "type": "topic_censured",
-                "topic_id": str(topic_id),
-            },
+            self._topic_censured_message(topic_id),
         )
 
     async def publish_new_topic_to_channel(
@@ -316,13 +330,5 @@ class ConnectionManager(EventPublisher):
         """Broadcast a new topic creation to a specific channel."""
         await self.broadcast_to_channel(
             channel,
-            {
-                "type": "new_topic",
-                "topic": {
-                    "id": str(topic_id),
-                    "content": content,
-                    "score": score,
-                    "created_at": created_at.isoformat(),
-                },
-            },
+            self._new_topic_message(topic_id, content, score, created_at),
         )

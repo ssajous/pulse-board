@@ -1,20 +1,9 @@
 """List event topics use case."""
 
 import uuid
-from dataclasses import dataclass
-from datetime import datetime
 
+from pulse_board.application.use_cases.list_topics import TopicSummary
 from pulse_board.domain.ports.topic_repository_port import TopicRepository
-
-
-@dataclass(frozen=True)
-class EventTopicSummary:
-    """Summary of a topic within an event."""
-
-    id: uuid.UUID
-    content: str
-    score: int
-    created_at: datetime
 
 
 class ListEventTopicsUseCase:
@@ -23,14 +12,14 @@ class ListEventTopicsUseCase:
     def __init__(self, repository: TopicRepository) -> None:
         self._repository = repository
 
-    def execute(self, event_id: uuid.UUID) -> list[EventTopicSummary]:
+    def execute(self, event_id: uuid.UUID) -> list[TopicSummary]:
         """List topics for a specific event, sorted by popularity.
 
         Args:
             event_id: The UUID of the event whose topics to list.
 
         Returns:
-            List of EventTopicSummary sorted by score desc,
+            List of TopicSummary sorted by score desc,
             then created_at desc.
         """
         topics = self._repository.list_by_event(event_id)
@@ -40,7 +29,7 @@ class ListEventTopicsUseCase:
             reverse=True,
         )
         return [
-            EventTopicSummary(
+            TopicSummary(
                 id=t.id,
                 content=t.content,
                 score=t.score,

@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.String(length=20),
-            server_default="ACTIVE",
+            server_default="active",
             nullable=False,
         ),
         sa.Column(
@@ -55,7 +55,7 @@ def upgrade() -> None:
         "events",
         ["code"],
         unique=True,
-        postgresql_where=sa.text("status = 'ACTIVE'"),
+        postgresql_where=sa.text("status = 'active'"),
     )
 
     op.create_table(

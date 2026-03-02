@@ -1,4 +1,4 @@
-export type EventStatus = "ACTIVE" | "CLOSED";
+export type EventStatus = "active" | "closed";
 
 export interface Event {
   readonly id: string;

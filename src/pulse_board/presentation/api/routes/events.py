@@ -132,6 +132,8 @@ async def join_event(
         title=result.title,
         code=result.code,
         description=result.description,
+        start_date=result.start_date,
+        end_date=result.end_date,
         status=result.status.value,
         created_at=result.created_at,
     )
@@ -223,6 +225,9 @@ async def create_event_topic(
     use_case: CreateTopicUseCase = Depends(
         get_create_topic_use_case,
     ),
+    get_event: GetEventUseCase = Depends(
+        get_get_event_use_case,
+    ),
     publisher: EventPublisher = Depends(get_event_publisher),
 ) -> TopicResponse:
     """Create a topic scoped to a specific event."""
@@ -248,8 +253,9 @@ async def create_event_topic(
             detail=exc.message,
         ) from exc
 
-    channel = f"event:{event_id}"
     try:
+        event = await asyncio.to_thread(get_event.execute, event_id)
+        channel = f"event:{event.code}"
         await publisher.publish_new_topic_to_channel(
             channel,
             result.id,

@@ -27,7 +27,7 @@ class EventModel(Base):
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
-        server_default="ACTIVE",
+        server_default="active",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

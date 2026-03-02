@@ -20,6 +20,8 @@ class JoinEventResult:
     title: str
     code: str
     description: str | None
+    start_date: datetime | None
+    end_date: datetime | None
     status: EventStatus
     created_at: datetime
 
@@ -54,6 +56,8 @@ class JoinEventUseCase:
             title=event.title,
             code=event.code,
             description=event.description,
+            start_date=event.start_date,
+            end_date=event.end_date,
             status=event.status,
             created_at=event.created_at,
         )

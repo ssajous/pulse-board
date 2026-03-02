@@ -82,15 +82,15 @@ class SQLAlchemyEventRepository(EventRepository):
     def is_code_unique(self, code: str) -> bool:
         """Check whether a join code is not yet in use."""
         with self._session_factory() as session:
-            exists = (
+            exists = session.query(
                 session.query(EventModel)
                 .filter(
                     EventModel.code == code,
                     EventModel.status == EventStatus.ACTIVE.value,
                 )
-                .first()
-            )
-            return exists is None
+                .exists()
+            ).scalar()
+            return not exists
 
     @staticmethod
     def _to_model(entity: Event) -> EventModel:

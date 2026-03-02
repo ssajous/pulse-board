@@ -3,10 +3,7 @@ import type {
   CreateEventRequest,
   EventApiPort,
 } from "@domain/ports/EventApiPort";
-
-interface ErrorResponse {
-  detail: string;
-}
+import type { ErrorResponse } from "./types";
 
 export class EventApiClient implements EventApiPort {
   async createEvent(request: CreateEventRequest): Promise<Event> {

@@ -1,13 +1,6 @@
 import type { Topic } from "@domain/entities/Topic";
 import type { TopicApiPort } from "@domain/ports/TopicApiPort";
-
-interface TopicsResponse {
-  topics: Topic[];
-}
-
-interface ErrorResponse {
-  detail: string;
-}
+import type { ErrorResponse, TopicsResponse } from "./types";
 
 export class TopicApiClient implements TopicApiPort {
   async fetchTopics(): Promise<Topic[]> {

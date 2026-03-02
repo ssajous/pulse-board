@@ -28,6 +28,7 @@ export class EventBoardViewModel {
   }
 
   async resolveEvent(code: string): Promise<void> {
+    this.dispose();
     this.isLoading = true;
     this.error = null;
     try {
@@ -41,6 +42,9 @@ export class EventBoardViewModel {
           new FingerprintService(),
           this._wsClient,
         );
+        this._wsClient.connect(
+          buildEventWebSocketUrl(event.code),
+        );
         this.isLoading = false;
       });
     } catch (e) {
@@ -52,16 +56,9 @@ export class EventBoardViewModel {
     }
   }
 
-  connectWebSocket(): void {
-    if (this.event && this._wsClient) {
-      this._wsClient.connect(
-        buildEventWebSocketUrl(this.event.code),
-      );
-    }
-  }
-
   dispose(): void {
     this.topicsViewModel?.dispose();
+    this.topicsViewModel = null;
     this._wsClient = null;
   }
 }

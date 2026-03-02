@@ -59,14 +59,8 @@ export function EventBoardPage() {
     if (code) {
       vm.resolveEvent(code);
     }
-  }, [code, vm]);
-
-  useEffect(() => {
-    if (vm.event) {
-      vm.connectWebSocket();
-    }
     return () => vm.dispose();
-  }, [vm, vm.event]);
+  }, [code, vm]);
 
   return (
     <>
