@@ -145,44 +145,42 @@ class TestEventTitleValidation:
         assert event.title == "X"
 
 
-class TestEventHtmlSanitization:
-    """Tests for HTML escaping in title and description."""
+class TestEventSpecialCharacters:
+    """Tests that special characters are preserved as-is."""
 
-    def test_title_html_tags_are_escaped(self) -> None:
-        """Should escape HTML angle brackets in titles."""
+    def test_title_preserves_special_characters(self) -> None:
+        """Should store special characters verbatim."""
         event = Event.create(
             title="<script>alert('xss')</script>",
             code="123456",
         )
 
-        assert "<script>" not in event.title
-        assert "&lt;script&gt;" in event.title
+        assert event.title == "<script>alert('xss')</script>"
 
-    def test_title_ampersand_is_escaped(self) -> None:
-        """Should escape ampersands in titles."""
+    def test_title_preserves_ampersand(self) -> None:
+        """Should store ampersands verbatim."""
         event = Event.create(title="Q&A Session", code="123456")
 
-        assert event.title == "Q&amp;A Session"
+        assert event.title == "Q&A Session"
 
-    def test_title_quotes_are_escaped(self) -> None:
-        """Should escape quotes in titles."""
+    def test_title_preserves_quotes(self) -> None:
+        """Should store quotes verbatim."""
         event = Event.create(title='Say "hello"', code="123456")
 
-        assert event.title == "Say &quot;hello&quot;"
+        assert event.title == 'Say "hello"'
 
-    def test_description_html_tags_are_escaped(self) -> None:
-        """Should escape HTML in descriptions."""
+    def test_description_preserves_special_characters(self) -> None:
+        """Should store description special characters verbatim."""
         event = Event.create(
             title="Safe Event",
             code="123456",
-            description="<b>bold</b>",
+            description="It's <b>bold</b> & \"cool\"",
         )
 
-        assert event.description is not None
-        assert "&lt;b&gt;" in event.description
+        assert event.description == "It's <b>bold</b> & \"cool\""
 
     def test_description_none_remains_none(self) -> None:
-        """Should not attempt to sanitize None descriptions."""
+        """Should leave None descriptions as None."""
         event = Event.create(title="Event", code="123456")
 
         assert event.description is None

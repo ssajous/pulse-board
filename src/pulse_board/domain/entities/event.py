@@ -1,7 +1,6 @@
 """Event entity — core business object for live event sessions."""
 
 import enum
-import html
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -65,15 +64,14 @@ class Event:
         """
         cleaned_title = title.strip()
         cls._validate_title(cleaned_title)
-        sanitized_title = cls._sanitize_html(cleaned_title)
-        sanitized_desc: str | None = None
+        cleaned_desc: str | None = None
         if description is not None:
-            sanitized_desc = cls._sanitize_html(description.strip())
+            cleaned_desc = description.strip()
         return cls(
             id=uuid.uuid4(),
-            title=sanitized_title,
+            title=cleaned_title,
             code=code,
-            description=sanitized_desc,
+            description=cleaned_desc,
             start_date=start_date,
             end_date=end_date,
             status=EventStatus.ACTIVE,
@@ -98,14 +96,3 @@ class Event:
                 f"characters or fewer (got {len(title)})"
             )
 
-    @staticmethod
-    def _sanitize_html(text: str) -> str:
-        """Escape HTML special characters to prevent XSS.
-
-        Args:
-            text: Pre-validated text string.
-
-        Returns:
-            Text with HTML special characters escaped.
-        """
-        return html.escape(text, quote=True)
