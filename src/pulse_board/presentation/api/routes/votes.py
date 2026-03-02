@@ -4,15 +4,10 @@ import asyncio
 import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from pulse_board.application.use_cases.cast_vote import CastVoteUseCase
 from pulse_board.domain.entities.vote import DOWNVOTE, UPVOTE
-from pulse_board.domain.exceptions import (
-    DuplicateVoteError,
-    EntityNotFoundError,
-    ValidationError,
-)
 from pulse_board.domain.ports.event_publisher_port import EventPublisher
 from pulse_board.presentation.api.dependencies import (
     get_cast_vote_use_case,
@@ -58,28 +53,12 @@ async def cast_vote(
     vote is toggled.
     """
     direction = UPVOTE if request.direction == "up" else DOWNVOTE
-    try:
-        result = await asyncio.to_thread(
-            use_case.execute,
-            topic_id=topic_id,
-            fingerprint_id=request.fingerprint_id,
-            direction=direction,
-        )
-    except EntityNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=exc.message,
-        ) from exc
-    except ValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=exc.message,
-        ) from exc
-    except DuplicateVoteError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=exc.message,
-        ) from exc
+    result = await asyncio.to_thread(
+        use_case.execute,
+        topic_id=topic_id,
+        fingerprint_id=request.fingerprint_id,
+        direction=direction,
+    )
 
     try:
         await publisher.publish_score_update(topic_id, result.new_score)

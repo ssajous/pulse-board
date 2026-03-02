@@ -11,6 +11,9 @@ from pulse_board.infrastructure.config.settings import get_settings
 from pulse_board.infrastructure.websocket.connection_manager import (
     ConnectionManager,
 )
+from pulse_board.presentation.api.exception_handlers import (
+    register_exception_handlers,
+)
 from pulse_board.presentation.api.routes.events import (
     router as events_router,
 )
@@ -63,6 +66,8 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
+
+    register_exception_handlers(app)
 
     app.state.connection_manager = ConnectionManager(
         max_connections=settings.ws_max_connections,

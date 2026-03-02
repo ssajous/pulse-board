@@ -4,7 +4,7 @@ import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from pulse_board.application.use_cases.create_event import (
     CreateEventUseCase,
@@ -20,11 +20,6 @@ from pulse_board.application.use_cases.join_event import (
 )
 from pulse_board.application.use_cases.list_event_topics import (
     ListEventTopicsUseCase,
-)
-from pulse_board.domain.exceptions import (
-    EventNotActiveError,
-    EventNotFoundError,
-    ValidationError,
 )
 from pulse_board.domain.ports.event_publisher_port import (
     EventPublisher,
@@ -70,19 +65,13 @@ async def create_event(
     ),
 ) -> EventResponse:
     """Create a new event session."""
-    try:
-        result = await asyncio.to_thread(
-            use_case.execute,
-            request.title,
-            description=request.description,
-            start_date=request.start_date,
-            end_date=request.end_date,
-        )
-    except ValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=exc.message,
-        ) from exc
+    result = await asyncio.to_thread(
+        use_case.execute,
+        request.title,
+        description=request.description,
+        start_date=request.start_date,
+        end_date=request.end_date,
+    )
 
     return EventResponse(
         id=str(result.id),
@@ -114,18 +103,7 @@ async def join_event(
     ),
 ) -> EventResponse:
     """Join an event by its join code."""
-    try:
-        result = await asyncio.to_thread(use_case.execute, code)
-    except EventNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=exc.message,
-        ) from exc
-    except EventNotActiveError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=exc.message,
-        ) from exc
+    result = await asyncio.to_thread(use_case.execute, code)
 
     return EventResponse(
         id=str(result.id),
@@ -156,13 +134,7 @@ async def get_event(
     ),
 ) -> EventResponse:
     """Get event details by ID."""
-    try:
-        result = await asyncio.to_thread(use_case.execute, event_id)
-    except EventNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=exc.message,
-        ) from exc
+    result = await asyncio.to_thread(use_case.execute, event_id)
 
     return EventResponse(
         id=str(result.id),
@@ -231,27 +203,11 @@ async def create_event_topic(
     publisher: EventPublisher = Depends(get_event_publisher),
 ) -> TopicResponse:
     """Create a topic scoped to a specific event."""
-    try:
-        result = await asyncio.to_thread(
-            use_case.execute,
-            request.content,
-            event_id=event_id,
-        )
-    except ValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=exc.message,
-        ) from exc
-    except EventNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=exc.message,
-        ) from exc
-    except EventNotActiveError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=exc.message,
-        ) from exc
+    result = await asyncio.to_thread(
+        use_case.execute,
+        request.content,
+        event_id=event_id,
+    )
 
     try:
         event = await asyncio.to_thread(get_event.execute, event_id)
