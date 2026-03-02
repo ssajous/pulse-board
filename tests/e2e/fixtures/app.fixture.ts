@@ -8,13 +8,15 @@ type AppFixtures = {
 };
 
 async function waitForPageReady(page: Page): Promise<void> {
+  // Start listening for the WebSocket console message BEFORE navigating,
+  // to avoid a race where the WS connects before the listener is set up.
+  const wsConnected = page.waitForEvent("console", {
+    predicate: (msg) => msg.text().includes("WebSocket connected to"),
+    timeout: 15_000,
+  });
   await page.goto("/");
   await page.locator("#topic-list").waitFor({ state: "visible" });
-  // Wait for WebSocket connection to establish (logged by our diagnostic code)
-  await page.waitForEvent("console", {
-    predicate: (msg) => msg.text().includes("WebSocket connected to"),
-    timeout: 10_000,
-  });
+  await wsConnected;
 }
 
 export const test = base.extend<AppFixtures>({

@@ -39,3 +39,34 @@ class EventPublisher(ABC):
     ) -> None:
         """Broadcast a new topic creation."""
         ...
+
+    @abstractmethod
+    async def publish_score_update_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        score: int,
+    ) -> None:
+        """Broadcast a score update to a specific channel."""
+        ...
+
+    @abstractmethod
+    async def publish_topic_censured_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+    ) -> None:
+        """Broadcast a topic censure to a specific channel."""
+        ...
+
+    @abstractmethod
+    async def publish_new_topic_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        content: str,
+        score: int,
+        created_at: datetime,
+    ) -> None:
+        """Broadcast a new topic creation to a specific channel."""
+        ...

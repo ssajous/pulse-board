@@ -31,11 +31,31 @@ class SQLAlchemyTopicRepository(TopicRepository):
             return self._to_entity(model)
 
     def list_active(self) -> list[Topic]:
-        """Return topics whose score is above the censure threshold."""
+        """Return single-board topics above the censure threshold.
+
+        Only returns topics that are not associated with any
+        event (``event_id IS NULL``).
+        """
         with self._session_factory() as session:
             models = (
                 session.query(TopicModel)
-                .filter(TopicModel.score > CENSURE_THRESHOLD)
+                .filter(
+                    TopicModel.score > CENSURE_THRESHOLD,
+                    TopicModel.event_id.is_(None),
+                )
+                .all()
+            )
+            return [self._to_entity(m) for m in models]
+
+    def list_by_event(self, event_id: uuid.UUID) -> list[Topic]:
+        """Return topics for a specific event above threshold."""
+        with self._session_factory() as session:
+            models = (
+                session.query(TopicModel)
+                .filter(
+                    TopicModel.event_id == event_id,
+                    TopicModel.score > CENSURE_THRESHOLD,
+                )
                 .all()
             )
             return [self._to_entity(m) for m in models]
@@ -79,6 +99,7 @@ class SQLAlchemyTopicRepository(TopicRepository):
             content=entity.content,
             score=entity.score,
             created_at=entity.created_at,
+            event_id=entity.event_id,
         )
 
     @staticmethod
@@ -88,4 +109,5 @@ class SQLAlchemyTopicRepository(TopicRepository):
             content=model.content,
             score=model.score,
             created_at=model.created_at,
+            event_id=model.event_id,
         )

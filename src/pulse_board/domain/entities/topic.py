@@ -1,6 +1,5 @@
 """Topic entity — core business object for the Pulse Board."""
 
-import html
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -23,13 +22,20 @@ class Topic:
     content: str
     score: int
     created_at: datetime
+    event_id: uuid.UUID | None = None
 
     @classmethod
-    def create(cls, content: str) -> "Topic":
+    def create(
+        cls,
+        content: str,
+        *,
+        event_id: uuid.UUID | None = None,
+    ) -> "Topic":
         """Create a new Topic with validated content.
 
         Args:
             content: The topic text (max 255 characters).
+            event_id: Optional UUID of the parent event.
 
         Returns:
             A new Topic instance with a generated id and timestamp.
@@ -40,12 +46,12 @@ class Topic:
         """
         cleaned = content.strip()
         cls._validate_content(cleaned)
-        sanitized = cls._sanitize_html(cleaned)
         return cls(
             id=uuid.uuid4(),
-            content=sanitized,
+            content=cleaned,
             score=0,
             created_at=datetime.now(UTC),
+            event_id=event_id,
         )
 
     @staticmethod
@@ -65,15 +71,3 @@ class Topic:
                 f"Topic content must be {MAX_CONTENT_LENGTH} "
                 f"characters or fewer (got {len(content)})"
             )
-
-    @staticmethod
-    def _sanitize_html(content: str) -> str:
-        """Escape HTML special characters to prevent XSS.
-
-        Args:
-            content: Pre-validated content string.
-
-        Returns:
-            Content with HTML special characters escaped.
-        """
-        return html.escape(content, quote=True)

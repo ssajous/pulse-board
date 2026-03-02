@@ -5,3 +5,5 @@ export type {
   WebSocketPort,
   WebSocketMessageHandler,
 } from "./WebSocketPort";
+export type { EventApiPort, CreateEventRequest } from "./EventApiPort";
+export type { PollApiPort } from "./PollApiPort";

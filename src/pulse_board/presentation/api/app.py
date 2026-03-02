@@ -11,6 +11,12 @@ from pulse_board.infrastructure.config.settings import get_settings
 from pulse_board.infrastructure.websocket.connection_manager import (
     ConnectionManager,
 )
+from pulse_board.presentation.api.exception_handlers import (
+    register_exception_handlers,
+)
+from pulse_board.presentation.api.routes.events import (
+    router as events_router,
+)
 from pulse_board.presentation.api.routes.health import (
     router as health_router,
 )
@@ -46,6 +52,10 @@ def create_app() -> FastAPI:
                 "name": "votes",
                 "description": "Voting on topics",
             },
+            {
+                "name": "events",
+                "description": "Event session management",
+            },
         ],
     )
 
@@ -57,6 +67,8 @@ def create_app() -> FastAPI:
         allow_headers=["Content-Type"],
     )
 
+    register_exception_handlers(app)
+
     app.state.connection_manager = ConnectionManager(
         max_connections=settings.ws_max_connections,
         max_connections_per_ip=settings.ws_max_connections_per_ip,
@@ -65,6 +77,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(topics_router)
     app.include_router(votes_router)
+    app.include_router(events_router)
     app.include_router(ws_router)
 
     if os.environ.get("PULSE_BOARD_TEST_MODE"):

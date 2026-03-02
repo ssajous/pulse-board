@@ -1,0 +1,1 @@
+export { EventJoinPage } from "./EventJoinPage";

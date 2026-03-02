@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from pulse_board.application.use_cases.create_topic import (
     CreateTopicUseCase,
@@ -11,7 +11,6 @@ from pulse_board.application.use_cases.create_topic import (
 from pulse_board.application.use_cases.list_topics import (
     ListTopicsUseCase,
 )
-from pulse_board.domain.exceptions import ValidationError
 from pulse_board.domain.ports.event_publisher_port import EventPublisher
 from pulse_board.presentation.api.dependencies import (
     get_create_topic_use_case,
@@ -46,13 +45,7 @@ async def create_topic(
     publisher: EventPublisher = Depends(get_event_publisher),
 ) -> TopicResponse:
     """Create a new topic."""
-    try:
-        result = await asyncio.to_thread(use_case.execute, request.content)
-    except ValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=exc.message,
-        ) from exc
+    result = await asyncio.to_thread(use_case.execute, request.content)
 
     try:
         await publisher.publish_new_topic(

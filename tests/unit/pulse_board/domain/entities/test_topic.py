@@ -97,38 +97,35 @@ class TestTopicCreate:
         assert "empty" in exc_info.value.message.lower()
 
 
-class TestTopicSanitization:
-    """Tests for HTML sanitization in Topic.create."""
+class TestTopicSpecialCharacters:
+    """Tests that special characters are preserved as-is."""
 
-    def test_create_escapes_html_tags(self) -> None:
-        """Script tags should be escaped to prevent XSS."""
+    def test_create_preserves_html_tags(self) -> None:
+        """Special characters should be stored verbatim."""
         topic = Topic.create("<script>alert(1)</script>")
-        assert "<script>" not in topic.content
-        assert "&lt;script&gt;" in topic.content
+        assert topic.content == "<script>alert(1)</script>"
 
-    def test_create_escapes_ampersand(self) -> None:
-        """Ampersands should be escaped to HTML entity."""
+    def test_create_preserves_ampersand(self) -> None:
+        """Ampersands should be stored verbatim."""
         topic = Topic.create("A & B")
-        assert topic.content == "A &amp; B"
+        assert topic.content == "A & B"
 
-    def test_create_escapes_quotes(self) -> None:
-        """Double quotes should be escaped to HTML entity."""
+    def test_create_preserves_quotes(self) -> None:
+        """Quotes should be stored verbatim."""
         topic = Topic.create('He said "hello"')
-        assert topic.content == "He said &quot;hello&quot;"
+        assert topic.content == 'He said "hello"'
 
-    def test_create_escapes_single_quotes(self) -> None:
-        """Single quotes should be escaped to HTML entity."""
+    def test_create_preserves_single_quotes(self) -> None:
+        """Single quotes should be stored verbatim."""
         topic = Topic.create("It's")
-        assert topic.content == "It&#x27;s"
+        assert topic.content == "It's"
 
-    def test_create_validates_length_before_sanitizing(self) -> None:
-        """Length validation runs on raw input, not escaped output."""
+    def test_create_preserves_special_chars_at_max_length(self) -> None:
+        """Special characters at max length boundary are stored verbatim."""
         content = "a" * (MAX_CONTENT_LENGTH - 1) + "<"
         topic = Topic.create(content)
-        assert topic.content.endswith("&lt;")
-        # Stored content is longer than 255 due to escaping,
-        # but validation passed because it checks raw length
-        assert len(topic.content) > MAX_CONTENT_LENGTH
+        assert topic.content.endswith("<")
+        assert len(topic.content) == MAX_CONTENT_LENGTH
 
     def test_plain_text_unchanged(self) -> None:
         """Plain text without special characters should pass through."""
