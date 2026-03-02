@@ -81,11 +81,7 @@ class GetPollResultsUseCase:
         option_results = []
         for opt in poll.options:
             count = counts.get(opt.id, 0)
-            percentage = (
-                round(count / total_votes * 100, 1)
-                if total_votes > 0
-                else 0.0
-            )
+            percentage = round(count / total_votes * 100, 1) if total_votes > 0 else 0.0
             option_results.append(
                 PollOptionResult(
                     option_id=opt.id,

@@ -69,8 +69,7 @@ def _poll_entity_to_schema(poll: Poll) -> PollSchema:
         question=poll.question,
         poll_type=poll.poll_type,
         options=[
-            PollOptionSchema(id=str(opt.id), text=opt.text)
-            for opt in poll.options
+            PollOptionSchema(id=str(opt.id), text=opt.text) for opt in poll.options
         ],
         is_active=poll.is_active,
         created_at=poll.created_at,
@@ -110,8 +109,7 @@ async def create_poll(
         question=result.question,
         poll_type=result.poll_type,
         options=[
-            PollOptionSchema(id=opt["id"], text=opt["text"])
-            for opt in result.options
+            PollOptionSchema(id=opt["id"], text=opt["text"]) for opt in result.options
         ],
         is_active=result.is_active,
         created_at=result.created_at,
@@ -230,8 +228,7 @@ async def activate_poll(
         question=result.question,
         poll_type=result.poll_type,
         options=[
-            PollOptionSchema(id=opt["id"], text=opt["text"])
-            for opt in result.options
+            PollOptionSchema(id=opt["id"], text=opt["text"]) for opt in result.options
         ],
         is_active=result.is_active,
         created_at=result.created_at,

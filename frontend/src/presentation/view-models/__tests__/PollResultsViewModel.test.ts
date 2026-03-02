@@ -42,13 +42,6 @@ function createMockPollApi(): PollApiPort {
   };
 }
 
-/**
- * Helper to flush microtasks so async operations resolve before assertions.
- */
-async function flushMicrotasks(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 0));
-}
-
 // --- Tests ---
 
 describe("PollResultsViewModel", () => {
@@ -144,7 +137,11 @@ describe("PollResultsViewModel", () => {
       });
       vm.updateResults(results);
 
-      vm.sortedOptions;
+      const sorted = vm.sortedOptions;
+
+      // sortedOptions returns descending by count
+      expect(sorted[0].option_id).toBe("opt-2");
+      expect(sorted[1].option_id).toBe("opt-1");
 
       // Original results should still have original order
       expect(vm.results!.options[0].option_id).toBe("opt-1");

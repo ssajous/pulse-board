@@ -93,9 +93,7 @@ class SQLAlchemyPollResponseRepository(PollResponseRepository):
     ) -> dict[uuid.UUID, int]:
         """Count responses grouped by option for a poll."""
         with self._session_factory() as session:
-            option_id_col = PollResponseModel.response_data[
-                "option_id"
-            ].astext
+            option_id_col = PollResponseModel.response_data["option_id"].astext
             rows = (
                 session.query(
                     option_id_col,
@@ -105,10 +103,7 @@ class SQLAlchemyPollResponseRepository(PollResponseRepository):
                 .group_by(option_id_col)
                 .all()
             )
-            return {
-                uuid.UUID(option_id_str): count
-                for option_id_str, count in rows
-            }
+            return {uuid.UUID(option_id_str): count for option_id_str, count in rows}
 
     @staticmethod
     def _to_model(entity: PollResponse) -> PollResponseModel:

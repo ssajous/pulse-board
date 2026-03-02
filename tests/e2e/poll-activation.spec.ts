@@ -49,7 +49,6 @@ test.describe("Poll activation", () => {
 
   test("activated poll appears as Live Poll on participant event board", async ({
     event,
-    contextA,
     eventPageB,
   }) => {
     // Create and activate a poll via API
@@ -143,7 +142,6 @@ test.describe("Poll activation", () => {
 
   test("only one poll can be active at a time", async ({
     event,
-    contextA,
     eventPageB,
   }) => {
     // Create two polls via API
