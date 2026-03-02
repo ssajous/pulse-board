@@ -1,7 +1,6 @@
 """Tests for the list event topics use case."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
 
 from pulse_board.application.use_cases.list_event_topics import (
     ListEventTopicsUseCase,
@@ -65,7 +64,6 @@ class TestListEventTopicsUseCase:
         """Topics should be sorted by score descending."""
         repo = FakeTopicRepository()
         event_id = uuid.uuid4()
-        base_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         low = Topic.create("Low", event_id=event_id)
         mid = Topic.create("Mid", event_id=event_id)

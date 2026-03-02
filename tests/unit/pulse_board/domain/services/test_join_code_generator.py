@@ -50,7 +50,7 @@ class TestJoinCodeGeneratorGenerate:
         generator = JoinCodeGenerator()
         call_count = 0
 
-        def unique_on_third(code: str) -> bool:
+        def unique_on_third(_code: str) -> bool:
             nonlocal call_count
             call_count += 1
             return call_count >= 3
@@ -72,7 +72,7 @@ class TestJoinCodeGeneratorGenerate:
         generator = JoinCodeGenerator()
         attempts = 0
 
-        def always_collide(code: str) -> bool:
+        def always_collide(_code: str) -> bool:
             nonlocal attempts
             attempts += 1
             return False
@@ -87,7 +87,7 @@ class TestJoinCodeGeneratorGenerate:
         generator = JoinCodeGenerator()
         call_count = 0
 
-        def unique_on_last(code: str) -> bool:
+        def unique_on_last(_code: str) -> bool:
             nonlocal call_count
             call_count += 1
             return call_count == MAX_RETRIES

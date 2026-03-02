@@ -1,6 +1,5 @@
 """Tests for the create event use case."""
 
-import uuid
 from datetime import UTC, datetime
 
 import pytest
@@ -10,10 +9,7 @@ from pulse_board.application.use_cases.create_event import (
     CreateEventUseCase,
 )
 from pulse_board.domain.entities.event import EventStatus
-from pulse_board.domain.exceptions import (
-    CodeGenerationError,
-    ValidationError,
-)
+from pulse_board.domain.exceptions import ValidationError
 from pulse_board.domain.services.join_code_generator import (
     JoinCodeGenerator,
 )
