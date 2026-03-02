@@ -18,3 +18,24 @@ export interface Poll {
   readonly is_active: boolean;
   readonly created_at: string;
 }
+
+export interface PollResults {
+  readonly poll_id: string;
+  readonly question: string;
+  readonly total_votes: number;
+  readonly options: PollOptionResult[];
+}
+
+export interface PollOptionResult {
+  readonly option_id: string;
+  readonly text: string;
+  readonly count: number;
+  readonly percentage: number;
+}
+
+export interface PollSubmitResponse {
+  readonly id: string;
+  readonly poll_id: string;
+  readonly option_id: string;
+  readonly created_at: string;
+}

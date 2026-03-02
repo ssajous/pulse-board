@@ -3,9 +3,11 @@ import type { Event } from "@domain/entities/Event";
 import type { EventApiPort } from "@domain/ports/EventApiPort";
 import { EventTopicApiClient } from "@infrastructure/api/eventTopicApiClient";
 import { VoteApiClient } from "@infrastructure/api/voteApiClient";
+import { PollApiClient } from "@infrastructure/api/pollApiClient";
 import { FingerprintService } from "@infrastructure/fingerprint/fingerprintService";
 import { WebSocketClient } from "@infrastructure/websocket";
 import { TopicsViewModel } from "./TopicsViewModel";
+import { PollParticipationViewModel } from "./PollParticipationViewModel";
 
 function buildEventWebSocketUrl(code: string): string {
   const protocol =
@@ -18,6 +20,8 @@ export class EventBoardViewModel {
   isLoading = true;
   error: string | null = null;
   topicsViewModel: TopicsViewModel | null = null;
+  pollParticipationViewModel: PollParticipationViewModel | null =
+    null;
 
   private readonly _api: EventApiPort;
   private _wsClient: WebSocketClient | null = null;
@@ -42,9 +46,16 @@ export class EventBoardViewModel {
           new FingerprintService(),
           this._wsClient,
         );
+        this.pollParticipationViewModel =
+          new PollParticipationViewModel(
+            new PollApiClient(),
+            this._wsClient,
+            new FingerprintService(),
+          );
         this._wsClient.connect(
           buildEventWebSocketUrl(event.code),
         );
+        this.pollParticipationViewModel.loadActivePoll(event.id);
         this.isLoading = false;
       });
     } catch (e) {
@@ -59,6 +70,8 @@ export class EventBoardViewModel {
   dispose(): void {
     this.topicsViewModel?.dispose();
     this.topicsViewModel = null;
+    this.pollParticipationViewModel?.dispose();
+    this.pollParticipationViewModel = null;
     this._wsClient = null;
   }
 }
