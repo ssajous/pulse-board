@@ -1,10 +1,12 @@
 {
   "enabledPlugins": {
-    "conventional-commits@stans-demo-marketplace": true,
-    "dev-agents@stans-demo-marketplace": true,
-    "git-back-to-main@stans-demo-marketplace": true,
-    "project-docs@stans-demo-marketplace": true,
-    "smart-prd@stans-demo-marketplace": true,
+    "conventional-commits@impel-claude-plugins": true,
+    "dev-agents@impel-claude-plugins": true,
+    "git-back-to-main@impel-claude-plugins": true,
+    "project-docs@impel-claude-plugins": true,
+    "smart-prd@impel-claude-plugins": true,
+    "mvvm-mobx-specialist@impel-claude-plugins": true,
+    "python-expert@impel-claude-plugins": true,
     "frontend-design@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true
   }
