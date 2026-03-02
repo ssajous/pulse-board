@@ -71,4 +71,3 @@ class Topic:
                 f"Topic content must be {MAX_CONTENT_LENGTH} "
                 f"characters or fewer (got {len(content)})"
             )
-

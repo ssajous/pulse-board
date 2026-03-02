@@ -95,4 +95,3 @@ class Event:
                 f"Event title must be {MAX_TITLE_LENGTH} "
                 f"characters or fewer (got {len(title)})"
             )
-

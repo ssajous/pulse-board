@@ -100,10 +100,7 @@ class TestJoinCodeGeneratorGenerate:
     def test_generates_different_codes_across_calls(self) -> None:
         """Multiple generate calls should very likely produce different codes."""
         generator = JoinCodeGenerator()
-        codes = {
-            generator.generate(is_code_unique=lambda _: True)
-            for _ in range(50)
-        }
+        codes = {generator.generate(is_code_unique=lambda _: True) for _ in range(50)}
 
         # With 900,000 possible codes, 50 calls should produce multiple unique values
         assert len(codes) > 1

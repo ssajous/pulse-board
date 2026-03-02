@@ -174,10 +174,10 @@ class TestEventSpecialCharacters:
         event = Event.create(
             title="Safe Event",
             code="123456",
-            description="It's <b>bold</b> & \"cool\"",
+            description='It\'s <b>bold</b> & "cool"',
         )
 
-        assert event.description == "It's <b>bold</b> & \"cool\""
+        assert event.description == 'It\'s <b>bold</b> & "cool"'
 
     def test_description_none_remains_none(self) -> None:
         """Should leave None descriptions as None."""

@@ -5,11 +5,10 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from pulse_board.domain.entities.event import Event, EventStatus
+from pulse_board.domain.entities.event import EventStatus
 from tests.unit.pulse_board.fakes import (
     FakeEventPublisher,
     FakeEventRepository,
-    FakeTopicRepository,
 )
 
 
