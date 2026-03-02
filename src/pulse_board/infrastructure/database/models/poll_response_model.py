@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,6 +14,13 @@ class PollResponseModel(Base):
     """ORM representation of a PollResponse entity."""
 
     __tablename__ = "poll_responses"
+    __table_args__ = (
+        UniqueConstraint(
+            "poll_id",
+            "fingerprint_id",
+            name="uq_poll_responses_poll_fingerprint",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     poll_id: Mapped[uuid.UUID] = mapped_column(
