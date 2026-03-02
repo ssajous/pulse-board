@@ -32,6 +32,9 @@ class FakeTopicRepository(TopicRepository):
     def delete(self, id: uuid.UUID) -> None:
         self._topics.pop(id, None)
 
+    def list_by_event(self, event_id: uuid.UUID) -> list[Topic]:
+        return [t for t in self._topics.values() if t.event_id == event_id]
+
     def update_score(self, id: uuid.UUID, delta: int) -> Topic | None:
         topic = self._topics.get(id)
         if topic is None:

@@ -56,6 +56,19 @@ class TopicRepository(ABC):
         ...
 
     @abstractmethod
+    def list_by_event(self, event_id: uuid.UUID) -> list[Topic]:
+        """Return active topics belonging to a specific event.
+
+        Args:
+            event_id: The UUID of the parent event.
+
+        Returns:
+            A list of Topic entities for the given event
+            whose score is above the censure threshold.
+        """
+        ...
+
+    @abstractmethod
     def update_score(self, id: uuid.UUID, delta: int) -> Topic | None:
         """Update a topic's score by a relative delta.
 
