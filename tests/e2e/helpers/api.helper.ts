@@ -14,6 +14,17 @@ interface VoteResponse {
   direction: "up" | "down";
 }
 
+interface EventResponse {
+  id: string;
+  title: string;
+  code: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+  created_at: string;
+}
+
 export async function resetDatabase(): Promise<void> {
   const response = await fetch(`${API_BASE}/test/reset`, {
     method: "POST",
@@ -65,4 +76,56 @@ export async function castVoteViaApi(
   }
 
   return response.json() as Promise<VoteResponse>;
+}
+
+export async function createEventViaApi(
+  title: string,
+  description?: string
+): Promise<EventResponse> {
+  const response = await fetch(`${API_BASE}/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, description: description ?? null }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to create event: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<EventResponse>;
+}
+
+export async function joinEventViaApi(
+  code: string
+): Promise<EventResponse> {
+  const response = await fetch(`${API_BASE}/events/join/${code}`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to join event: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<EventResponse>;
+}
+
+export async function createEventTopicViaApi(
+  eventId: string,
+  content: string
+): Promise<TopicResponse> {
+  const response = await fetch(`${API_BASE}/events/${eventId}/topics`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to create event topic: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<TopicResponse>;
 }

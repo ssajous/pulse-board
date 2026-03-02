@@ -29,10 +29,10 @@ _PRODUCTION_DB_PATTERNS = re.compile(
 def reset_database(
     x_test_token: str | None = Header(default=None),
 ) -> dict[str, Any]:
-    """Reset the database by clearing all votes and topics.
+    """Reset the database by clearing all test data.
 
-    Deletes votes before topics to respect foreign key
-    constraints. This endpoint is only available when
+    Deletes in FK-safe order: poll_responses, votes, polls,
+    topics, events.  This endpoint is only available when
     PULSE_BOARD_TEST_MODE is enabled.
     """
     logger.warning("Test reset endpoint called")
@@ -60,10 +60,13 @@ def reset_database(
     session_factory = get_session_factory()
     session = session_factory()
     try:
+        session.execute(text("DELETE FROM poll_responses"))
         session.execute(text("DELETE FROM votes"))
+        session.execute(text("DELETE FROM polls"))
         session.execute(text("DELETE FROM topics"))
+        session.execute(text("DELETE FROM events"))
         session.commit()
-        logger.info("Test reset: cleared all votes and topics")
+        logger.info("Test reset: cleared all data")
         return {"status": "ok"}
     except Exception:
         session.rollback()
