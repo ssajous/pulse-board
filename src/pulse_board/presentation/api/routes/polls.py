@@ -21,6 +21,7 @@ from pulse_board.application.use_cases.get_poll_results import (
 from pulse_board.application.use_cases.submit_poll_response import (
     SubmitPollResponseUseCase,
 )
+from pulse_board.domain.entities.poll import Poll
 from pulse_board.domain.ports.event_publisher_port import (
     EventPublisher,
 )
@@ -60,6 +61,22 @@ polls_router = APIRouter(
 )
 
 
+def _poll_entity_to_schema(poll: Poll) -> PollSchema:
+    """Convert a domain Poll entity to its API schema."""
+    return PollSchema(
+        id=str(poll.id),
+        event_id=str(poll.event_id),
+        question=poll.question,
+        poll_type=poll.poll_type,
+        options=[
+            PollOptionSchema(id=str(opt.id), text=opt.text)
+            for opt in poll.options
+        ],
+        is_active=poll.is_active,
+        created_at=poll.created_at,
+    )
+
+
 @events_polls_router.post(
     "/{event_id}/polls",
     response_model=PollSchema,
@@ -93,7 +110,8 @@ async def create_poll(
         question=result.question,
         poll_type=result.poll_type,
         options=[
-            PollOptionSchema(id=opt["id"], text=opt["text"]) for opt in result.options
+            PollOptionSchema(id=opt["id"], text=opt["text"])
+            for opt in result.options
         ],
         is_active=result.is_active,
         created_at=result.created_at,
@@ -119,24 +137,7 @@ async def list_polls(
         event_id,
     )
     return PollListResponse(
-        polls=[
-            PollSchema(
-                id=str(p.id),
-                event_id=str(p.event_id),
-                question=p.question,
-                poll_type=p.poll_type,
-                options=[
-                    PollOptionSchema(
-                        id=str(opt.id),
-                        text=opt.text,
-                    )
-                    for opt in p.options
-                ],
-                is_active=p.is_active,
-                created_at=p.created_at,
-            )
-            for p in polls
-        ]
+        polls=[_poll_entity_to_schema(p) for p in polls],
     )
 
 
@@ -164,21 +165,7 @@ async def get_active_poll(
     if poll is None:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    return PollSchema(
-        id=str(poll.id),
-        event_id=str(poll.event_id),
-        question=poll.question,
-        poll_type=poll.poll_type,
-        options=[
-            PollOptionSchema(
-                id=str(opt.id),
-                text=opt.text,
-            )
-            for opt in poll.options
-        ],
-        is_active=poll.is_active,
-        created_at=poll.created_at,
-    )
+    return _poll_entity_to_schema(poll)
 
 
 @polls_router.patch(
@@ -243,10 +230,7 @@ async def activate_poll(
         question=result.question,
         poll_type="multiple_choice",
         options=[
-            PollOptionSchema(
-                id=opt["id"],
-                text=opt["text"],
-            )
+            PollOptionSchema(id=opt["id"], text=opt["text"])
             for opt in result.options
         ],
         is_active=result.is_active,

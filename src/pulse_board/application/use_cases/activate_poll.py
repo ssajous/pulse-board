@@ -18,6 +18,7 @@ class ActivatePollResult:
         question: The poll question text.
         is_active: Whether the poll is now active.
         options: List of option dicts with id and text.
+        created_at: When the poll was created.
     """
 
     id: uuid.UUID

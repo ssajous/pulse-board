@@ -75,27 +75,25 @@ class GetPollResultsUseCase:
         if poll is None:
             raise EntityNotFoundError(f"Poll with id '{poll_id}' not found")
 
-        counts = self._poll_response_repo.count_all_by_poll(
-            poll_id,
-        )
+        counts = self._poll_response_repo.count_all_by_poll(poll_id)
         total_votes = sum(counts.values())
 
-        option_results = [
-            PollOptionResult(
-                option_id=opt.id,
-                text=opt.text,
-                count=counts.get(opt.id, 0),
-                percentage=(
-                    round(
-                        counts.get(opt.id, 0) / total_votes * 100,
-                        1,
-                    )
-                    if total_votes > 0
-                    else 0.0
-                ),
+        option_results = []
+        for opt in poll.options:
+            count = counts.get(opt.id, 0)
+            percentage = (
+                round(count / total_votes * 100, 1)
+                if total_votes > 0
+                else 0.0
             )
-            for opt in poll.options
-        ]
+            option_results.append(
+                PollOptionResult(
+                    option_id=opt.id,
+                    text=opt.text,
+                    count=count,
+                    percentage=percentage,
+                )
+            )
 
         return PollResultsResult(
             poll_id=poll.id,

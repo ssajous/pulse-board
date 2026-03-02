@@ -110,44 +110,44 @@ export class PollParticipationViewModel {
     this._ws.onMessage((data: unknown) => {
       logger.log("Poll WebSocket message received:", data);
       if (!isRecord(data)) return;
-      const type = data.type as string;
 
-      if (type === "poll_activated") {
-        const poll: Poll = {
-          id: data.poll_id as string,
-          event_id: "",
-          question: data.question as string,
-          poll_type: "multiple_choice",
-          options: data.options as Poll["options"],
-          is_active: true,
-          created_at: new Date().toISOString(),
-        };
-        this.handlePollActivated(poll);
-      }
-      if (type === "poll_deactivated") {
-        this.handlePollDeactivated();
-      }
-      if (
-        type === "poll_results_updated"
-        && Array.isArray(data.results)
-      ) {
-        const options = data.results as PollResults["options"];
-        const totalVotes = options.reduce(
-          (sum, opt) => sum + opt.count,
-          0,
-        );
-        const results: PollResults = {
-          poll_id: data.poll_id as string,
-          question: this.activePoll?.question ?? "",
-          total_votes: totalVotes,
-          options,
-        };
-        this.handleResultsUpdated(results);
+      switch (data.type as string) {
+        case "poll_activated": {
+          const poll: Poll = {
+            id: data.poll_id as string,
+            event_id: "",
+            question: data.question as string,
+            poll_type: "multiple_choice",
+            options: data.options as Poll["options"],
+            is_active: true,
+            created_at: new Date().toISOString(),
+          };
+          this.handlePollActivated(poll);
+          break;
+        }
+        case "poll_deactivated":
+          this.handlePollDeactivated();
+          break;
+        case "poll_results_updated": {
+          if (!Array.isArray(data.results)) break;
+          const options = data.results as PollResults["options"];
+          const totalVotes = options.reduce(
+            (sum, opt) => sum + opt.count,
+            0,
+          );
+          this.handleResultsUpdated({
+            poll_id: data.poll_id as string,
+            question: this.activePoll?.question ?? "",
+            total_votes: totalVotes,
+            options,
+          });
+          break;
+        }
       }
     });
   }
 
-  private handlePollActivated(poll: Poll): void {
+  private resetPollState(poll: Poll | null): void {
     this.activePoll = poll;
     this.selectedOptionId = null;
     this.hasSubmitted = false;
@@ -155,12 +155,12 @@ export class PollParticipationViewModel {
     this.error = null;
   }
 
+  private handlePollActivated(poll: Poll): void {
+    this.resetPollState(poll);
+  }
+
   private handlePollDeactivated(): void {
-    this.activePoll = null;
-    this.selectedOptionId = null;
-    this.hasSubmitted = false;
-    this.results = null;
-    this.error = null;
+    this.resetPollState(null);
   }
 
   private handleResultsUpdated(results: PollResults): void {

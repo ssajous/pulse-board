@@ -85,10 +85,7 @@ class SQLAlchemyPollResponseRepository(PollResponseRepository):
         option_id: uuid.UUID,
     ) -> int:
         """Count responses for a specific option."""
-        responses = self.list_by_poll(poll_id)
-        return sum(
-            1 for r in responses if r.response_data.get("option_id") == str(option_id)
-        )
+        return self.count_all_by_poll(poll_id).get(option_id, 0)
 
     def count_all_by_poll(
         self,

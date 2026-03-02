@@ -156,7 +156,7 @@ def get_event_publisher(request: Request) -> EventPublisher:
 # ------------------------------------------------------------------
 
 
-def _get_poll_repository() -> SQLAlchemyPollRepository:
+def get_poll_repository() -> SQLAlchemyPollRepository:
     """Provide a SQLAlchemyPollRepository instance."""
     return SQLAlchemyPollRepository(
         session_factory=get_session_factory(),
@@ -170,15 +170,10 @@ def _get_poll_response_repository() -> SQLAlchemyPollResponseRepository:
     )
 
 
-def get_poll_repository() -> SQLAlchemyPollRepository:
-    """Provide a PollRepository for direct injection."""
-    return _get_poll_repository()
-
-
 def get_create_poll_use_case() -> CreatePollUseCase:
     """Provide a CreatePollUseCase instance."""
     return CreatePollUseCase(
-        poll_repository=_get_poll_repository(),
+        poll_repository=get_poll_repository(),
         event_repository=_get_event_repository(),
     )
 
@@ -186,14 +181,14 @@ def get_create_poll_use_case() -> CreatePollUseCase:
 def get_activate_poll_use_case() -> ActivatePollUseCase:
     """Provide an ActivatePollUseCase instance."""
     return ActivatePollUseCase(
-        poll_repository=_get_poll_repository(),
+        poll_repository=get_poll_repository(),
     )
 
 
 def get_submit_poll_response_use_case() -> SubmitPollResponseUseCase:
     """Provide a SubmitPollResponseUseCase instance."""
     return SubmitPollResponseUseCase(
-        poll_repository=_get_poll_repository(),
+        poll_repository=get_poll_repository(),
         poll_response_repository=_get_poll_response_repository(),
     )
 
@@ -201,6 +196,6 @@ def get_submit_poll_response_use_case() -> SubmitPollResponseUseCase:
 def get_get_poll_results_use_case() -> GetPollResultsUseCase:
     """Provide a GetPollResultsUseCase instance."""
     return GetPollResultsUseCase(
-        poll_repository=_get_poll_repository(),
+        poll_repository=get_poll_repository(),
         poll_response_repository=_get_poll_response_repository(),
     )
