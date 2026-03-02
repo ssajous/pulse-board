@@ -5,11 +5,57 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from pulse_board.domain.entities.event import Event, EventStatus
 from pulse_board.domain.entities.topic import Topic
 from pulse_board.domain.entities.vote import Vote
 from pulse_board.domain.ports.event_publisher_port import EventPublisher
+from pulse_board.domain.ports.event_repository_port import EventRepository
 from pulse_board.domain.ports.topic_repository_port import TopicRepository
 from pulse_board.domain.ports.vote_repository_port import VoteRepository
+
+
+class FakeEventRepository(EventRepository):
+    """In-memory event repository for unit tests."""
+
+    def __init__(self) -> None:
+        self._events: dict[uuid.UUID, Event] = {}
+
+    def create(self, event: Event) -> Event:
+        """Persist a new event."""
+        self._events[event.id] = event
+        return event
+
+    def get_by_id(self, id: uuid.UUID) -> Event | None:
+        """Look up an event by ID."""
+        return self._events.get(id)
+
+    def get_by_code(self, code: str) -> Event | None:
+        """Look up an event by join code."""
+        for event in self._events.values():
+            if event.code == code:
+                return event
+        return None
+
+    def list_active(self) -> list[Event]:
+        """Return all active events."""
+        return [e for e in self._events.values() if e.status == EventStatus.ACTIVE]
+
+    def update_status(
+        self,
+        id: uuid.UUID,
+        status: EventStatus,
+    ) -> Event | None:
+        """Update the status of an event."""
+        event = self._events.get(id)
+        if event is None:
+            return None
+        updated = dataclasses.replace(event, status=status)
+        self._events[id] = updated
+        return updated
+
+    def is_code_unique(self, code: str) -> bool:
+        """Check whether a join code is not yet in use."""
+        return all(e.code != code for e in self._events.values())
 
 
 class FakeTopicRepository(TopicRepository):
