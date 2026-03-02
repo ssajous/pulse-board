@@ -2,7 +2,6 @@ import { test, expect } from "./fixtures/event-app.fixture";
 import {
   resetDatabase,
   createEventTopicViaApi,
-  castVoteViaApi,
 } from "./helpers/api.helper";
 import {
   waitForTopicToAppear,
