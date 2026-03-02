@@ -124,6 +124,9 @@ class FakeEventPublisher(EventPublisher):
         self.score_updates: list[dict[str, Any]] = []
         self.censured_events: list[dict[str, Any]] = []
         self.new_topic_events: list[dict[str, Any]] = []
+        self.channel_score_updates: list[dict[str, Any]] = []
+        self.channel_censured_events: list[dict[str, Any]] = []
+        self.channel_new_topic_events: list[dict[str, Any]] = []
 
     async def publish_score_update(
         self,
@@ -147,6 +150,45 @@ class FakeEventPublisher(EventPublisher):
     ) -> None:
         self.new_topic_events.append(
             {
+                "topic_id": topic_id,
+                "content": content,
+                "score": score,
+                "created_at": created_at,
+            }
+        )
+
+    async def publish_score_update_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        score: int,
+    ) -> None:
+        self.channel_score_updates.append(
+            {
+                "channel": channel,
+                "topic_id": topic_id,
+                "score": score,
+            }
+        )
+
+    async def publish_topic_censured_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+    ) -> None:
+        self.channel_censured_events.append({"channel": channel, "topic_id": topic_id})
+
+    async def publish_new_topic_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        content: str,
+        score: int,
+        created_at: datetime,
+    ) -> None:
+        self.channel_new_topic_events.append(
+            {
+                "channel": channel,
                 "topic_id": topic_id,
                 "content": content,
                 "score": score,

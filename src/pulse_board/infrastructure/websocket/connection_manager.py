@@ -33,6 +33,7 @@ class ConnectionManager(EventPublisher):
         max_connections_per_ip: int = 10,
     ) -> None:
         self._connections: set[WebSocket] = set()
+        self._channels: dict[str, set[WebSocket]] = {}
         self._lock = asyncio.Lock()
         self._max_connections = max_connections
         self._max_connections_per_ip = max_connections_per_ip
@@ -164,4 +165,164 @@ class ConnectionManager(EventPublisher):
                     "created_at": created_at.isoformat(),
                 },
             }
+        )
+
+    # ------------------------------------------------------------------
+    # Channel-based connection management
+    # ------------------------------------------------------------------
+
+    async def connect_to_channel(
+        self,
+        websocket: WebSocket,
+        channel: str,
+    ) -> None:
+        """Accept a WebSocket and register it to a named channel.
+
+        Enforces the same global and per-IP connection limits as
+        the regular ``connect`` method.  Rejects with close code
+        1013 when a limit is reached.
+        """
+        async with self._lock:
+            if len(self._connections) >= self._max_connections:
+                logger.warning(
+                    "Max connections (%d) reached, rejecting",
+                    self._max_connections,
+                )
+                await websocket.close(code=1013)
+                return
+
+            client_ip = websocket.client.host if websocket.client else "unknown"
+            if (
+                client_ip != "unknown"
+                and self._count_connections_for_ip(client_ip)
+                >= self._max_connections_per_ip
+            ):
+                logger.warning(
+                    "Per-IP limit (%d) reached for %s, rejecting",
+                    self._max_connections_per_ip,
+                    client_ip,
+                )
+                await websocket.close(code=1013)
+                return
+
+            await websocket.accept()
+            self._connections.add(websocket)
+            if channel not in self._channels:
+                self._channels[channel] = set()
+            self._channels[channel].add(websocket)
+
+        logger.info(
+            "WebSocket connected to channel %s. Active: %d",
+            channel,
+            len(self._connections),
+        )
+
+    async def disconnect_from_channel(
+        self,
+        websocket: WebSocket,
+        channel: str,
+    ) -> None:
+        """Remove a WebSocket from both the channel and global set."""
+        async with self._lock:
+            self._connections.discard(websocket)
+            if channel in self._channels:
+                self._channels[channel].discard(websocket)
+                if not self._channels[channel]:
+                    del self._channels[channel]
+
+        logger.info(
+            "WebSocket disconnected from channel %s. Active: %d",
+            channel,
+            len(self._connections),
+        )
+
+    async def broadcast_to_channel(
+        self,
+        channel: str,
+        message: dict[str, Any],
+    ) -> None:
+        """Send a JSON message to all connections in a channel.
+
+        Dead connections are detected on send failure and removed
+        from both the channel and global connection set.
+        """
+        async with self._lock:
+            connections = set(self._channels.get(channel, set()))
+
+        if not connections:
+            return
+
+        logger.info(
+            "Broadcasting type=%s to channel %s (%d clients)",
+            message.get("type", "unknown"),
+            channel,
+            len(connections),
+        )
+
+        dead: set[WebSocket] = set()
+        for ws in connections:
+            try:
+                await ws.send_json(message)
+            except Exception:
+                logger.warning("Failed to send to channel client, removing")
+                dead.add(ws)
+
+        if dead:
+            async with self._lock:
+                self._connections -= dead
+                if channel in self._channels:
+                    self._channels[channel] -= dead
+                    if not self._channels[channel]:
+                        del self._channels[channel]
+
+    async def publish_score_update_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        score: int,
+    ) -> None:
+        """Broadcast a score update to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            {
+                "type": "score_update",
+                "topic_id": str(topic_id),
+                "score": score,
+            },
+        )
+
+    async def publish_topic_censured_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+    ) -> None:
+        """Broadcast a topic censure to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            {
+                "type": "topic_censured",
+                "topic_id": str(topic_id),
+            },
+        )
+
+    async def publish_new_topic_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        content: str,
+        score: int,
+        created_at: datetime,
+    ) -> None:
+        """Broadcast a new topic creation to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            {
+                "type": "new_topic",
+                "topic": {
+                    "id": str(topic_id),
+                    "content": content,
+                    "score": score,
+                    "created_at": created_at.isoformat(),
+                },
+            },
         )
