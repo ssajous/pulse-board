@@ -27,6 +27,18 @@ class PollRepository(ABC):
         ...
 
     @abstractmethod
+    def save(self, poll: Poll) -> Poll:
+        """Persist a new or updated poll.
+
+        Args:
+            poll: The Poll entity to store or update.
+
+        Returns:
+            The persisted Poll.
+        """
+        ...
+
+    @abstractmethod
     def get_by_id(self, id: uuid.UUID) -> Poll | None:
         """Look up a poll by its unique identifier.
 
@@ -68,5 +80,20 @@ class PollRepository(ABC):
 
         Returns:
             The updated Poll, or None if not found.
+        """
+        ...
+
+    @abstractmethod
+    def find_active_by_event(
+        self,
+        event_id: uuid.UUID,
+    ) -> Poll | None:
+        """Find the currently active poll for an event.
+
+        Args:
+            event_id: The UUID of the parent event.
+
+        Returns:
+            The active Poll, or None if no poll is active.
         """
         ...

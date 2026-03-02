@@ -127,6 +127,9 @@ class FakeEventPublisher(EventPublisher):
         self.channel_score_updates: list[dict[str, Any]] = []
         self.channel_censured_events: list[dict[str, Any]] = []
         self.channel_new_topic_events: list[dict[str, Any]] = []
+        self.channel_poll_activated: list[dict[str, Any]] = []
+        self.channel_poll_deactivated: list[dict[str, Any]] = []
+        self.channel_poll_results_updated: list[dict[str, Any]] = []
 
     async def publish_score_update(
         self,
@@ -193,5 +196,42 @@ class FakeEventPublisher(EventPublisher):
                 "content": content,
                 "score": score,
                 "created_at": created_at,
+            }
+        )
+
+    async def publish_poll_activated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+        question: str,
+        options: list[dict[str, str]],
+    ) -> None:
+        self.channel_poll_activated.append(
+            {
+                "channel": channel,
+                "poll_id": poll_id,
+                "question": question,
+                "options": options,
+            }
+        )
+
+    async def publish_poll_deactivated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+    ) -> None:
+        self.channel_poll_deactivated.append({"channel": channel, "poll_id": poll_id})
+
+    async def publish_poll_results_updated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+        results: list[dict[str, object]],
+    ) -> None:
+        self.channel_poll_results_updated.append(
+            {
+                "channel": channel,
+                "poll_id": poll_id,
+                "results": results,
             }
         )

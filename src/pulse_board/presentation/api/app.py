@@ -20,6 +20,10 @@ from pulse_board.presentation.api.routes.events import (
 from pulse_board.presentation.api.routes.health import (
     router as health_router,
 )
+from pulse_board.presentation.api.routes.polls import (
+    events_polls_router,
+    polls_router,
+)
 from pulse_board.presentation.api.routes.topics import (
     router as topics_router,
 )
@@ -56,6 +60,10 @@ def create_app() -> FastAPI:
                 "name": "events",
                 "description": "Event session management",
             },
+            {
+                "name": "polls",
+                "description": "Poll management and voting",
+            },
         ],
     )
 
@@ -63,7 +71,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins.split(","),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
 
@@ -78,6 +86,8 @@ def create_app() -> FastAPI:
     app.include_router(topics_router)
     app.include_router(votes_router)
     app.include_router(events_router)
+    app.include_router(events_polls_router)
+    app.include_router(polls_router)
     app.include_router(ws_router)
 
     if os.environ.get("PULSE_BOARD_TEST_MODE"):

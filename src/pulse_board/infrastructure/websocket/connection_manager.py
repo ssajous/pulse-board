@@ -332,3 +332,80 @@ class ConnectionManager(EventPublisher):
             channel,
             self._new_topic_message(topic_id, content, score, created_at),
         )
+
+    # ------------------------------------------------------------------
+    # Poll message builders
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _poll_activated_message(
+        poll_id: uuid.UUID,
+        question: str,
+        options: list[dict[str, str]],
+    ) -> dict[str, Any]:
+        return {
+            "type": "poll_activated",
+            "poll_id": str(poll_id),
+            "question": question,
+            "options": options,
+        }
+
+    @staticmethod
+    def _poll_deactivated_message(
+        poll_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        return {
+            "type": "poll_deactivated",
+            "poll_id": str(poll_id),
+        }
+
+    @staticmethod
+    def _poll_results_updated_message(
+        poll_id: uuid.UUID,
+        results: list[dict[str, object]],
+    ) -> dict[str, Any]:
+        return {
+            "type": "poll_results_updated",
+            "poll_id": str(poll_id),
+            "results": results,
+        }
+
+    # ------------------------------------------------------------------
+    # Poll channel publish methods
+    # ------------------------------------------------------------------
+
+    async def publish_poll_activated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+        question: str,
+        options: list[dict[str, str]],
+    ) -> None:
+        """Broadcast a poll activation to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            self._poll_activated_message(poll_id, question, options),
+        )
+
+    async def publish_poll_deactivated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+    ) -> None:
+        """Broadcast a poll deactivation to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            self._poll_deactivated_message(poll_id),
+        )
+
+    async def publish_poll_results_updated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+        results: list[dict[str, object]],
+    ) -> None:
+        """Broadcast updated poll results to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            self._poll_results_updated_message(poll_id, results),
+        )
