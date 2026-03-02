@@ -24,12 +24,14 @@ class SubmitPollResponseResult:
     Attributes:
         id: The UUID of the created response.
         poll_id: The UUID of the poll.
+        event_id: The UUID of the poll's parent event.
         option_id: The UUID of the selected option.
         created_at: When the response was submitted.
     """
 
     id: uuid.UUID
     poll_id: uuid.UUID
+    event_id: uuid.UUID
     option_id: uuid.UUID
     created_at: datetime
 
@@ -104,6 +106,7 @@ class SubmitPollResponseUseCase:
         return SubmitPollResponseResult(
             id=saved.id,
             poll_id=saved.poll_id,
+            event_id=poll.event_id,
             option_id=saved.option_id,
             created_at=saved.created_at,
         )

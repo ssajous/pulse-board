@@ -24,6 +24,7 @@ class ActivatePollResult:
     id: uuid.UUID
     event_id: uuid.UUID
     question: str
+    poll_type: str
     is_active: bool
     options: list[dict[str, str]]
     created_at: datetime
@@ -86,7 +87,8 @@ class ActivatePollUseCase:
             id=updated.id,
             event_id=updated.event_id,
             question=updated.question,
+            poll_type=updated.poll_type,
             is_active=updated.is_active,
-            options=[{"id": str(opt.id), "text": opt.text} for opt in updated.options],
+            options=[opt.to_dict() for opt in updated.options],
             created_at=updated.created_at,
         )

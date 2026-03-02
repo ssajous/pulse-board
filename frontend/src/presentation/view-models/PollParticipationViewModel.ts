@@ -4,16 +4,7 @@ import type { PollApiPort } from "@domain/ports/PollApiPort";
 import type { WebSocketPort } from "@domain/ports/WebSocketPort";
 import type { FingerprintPort } from "@domain/ports/FingerprintPort";
 import { logger } from "@infrastructure/logger";
-
-function isRecord(
-  value: unknown,
-): value is Record<string, unknown> {
-  return (
-    typeof value === "object"
-    && value !== null
-    && !Array.isArray(value)
-  );
-}
+import { isRecord } from "@infrastructure/utils/typeGuards";
 
 export class PollParticipationViewModel {
   activePoll: Poll | null = null;

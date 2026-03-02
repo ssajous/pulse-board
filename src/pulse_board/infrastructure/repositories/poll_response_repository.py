@@ -1,8 +1,8 @@
 """SQLAlchemy implementation of the PollResponseRepository port."""
 
 import uuid
-from collections import Counter
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -91,18 +91,24 @@ class SQLAlchemyPollResponseRepository(PollResponseRepository):
         self,
         poll_id: uuid.UUID,
     ) -> dict[uuid.UUID, int]:
-        """Count responses grouped by option for a poll.
-
-        Queries all responses and aggregates in Python since
-        JSONB grouping across databases is complex.
-        """
-        responses = self.list_by_poll(poll_id)
-        counter: Counter[uuid.UUID] = Counter()
-        for response in responses:
-            option_id_str = response.response_data.get("option_id")
-            if option_id_str:
-                counter[uuid.UUID(option_id_str)] += 1
-        return dict(counter)
+        """Count responses grouped by option for a poll."""
+        with self._session_factory() as session:
+            option_id_col = PollResponseModel.response_data[
+                "option_id"
+            ].astext
+            rows = (
+                session.query(
+                    option_id_col,
+                    func.count(),
+                )
+                .filter(PollResponseModel.poll_id == poll_id)
+                .group_by(option_id_col)
+                .all()
+            )
+            return {
+                uuid.UUID(option_id_str): count
+                for option_id_str, count in rows
+            }
 
     @staticmethod
     def _to_model(entity: PollResponse) -> PollResponseModel:

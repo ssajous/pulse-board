@@ -24,6 +24,10 @@ class PollOption:
     id: uuid.UUID
     text: str
 
+    def to_dict(self) -> dict[str, str]:
+        """Serialize to a dict with string id and text."""
+        return {"id": str(self.id), "text": self.text}
+
 
 @dataclass
 class Poll:

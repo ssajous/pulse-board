@@ -83,7 +83,7 @@ class CreatePollUseCase:
             event_id=saved.event_id,
             question=saved.question,
             poll_type=saved.poll_type,
-            options=[{"id": str(opt.id), "text": opt.text} for opt in saved.options],
+            options=[opt.to_dict() for opt in saved.options],
             is_active=saved.is_active,
             created_at=saved.created_at,
         )

@@ -98,7 +98,7 @@ class SQLAlchemyPollRepository(PollRepository):
             event_id=entity.event_id,
             question=entity.question,
             poll_type=entity.poll_type,
-            options=[{"id": str(opt.id), "text": opt.text} for opt in entity.options],
+            options=[opt.to_dict() for opt in entity.options],
             is_active=entity.is_active,
             created_at=entity.created_at,
         )

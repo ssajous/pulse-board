@@ -6,13 +6,10 @@ import type { FingerprintPort } from "@domain/ports/FingerprintPort";
 import type { WebSocketPort } from "@domain/ports/WebSocketPort";
 import { computeScoreDelta } from "@application/use-cases/computeScoreDelta";
 import { logger } from "@infrastructure/logger";
-
-function extractErrorMessage(
-  error: unknown,
-  fallback: string
-): string {
-  return error instanceof Error ? error.message : fallback;
-}
+import {
+  isRecord,
+  extractErrorMessage,
+} from "@infrastructure/utils/typeGuards";
 
 function buildWebSocketUrl(): string {
   const protocol =
@@ -45,16 +42,6 @@ type WebSocketMessage =
   | ScoreUpdateMessage
   | TopicCensuredMessage
   | NewTopicMessage;
-
-function isRecord(
-  value: unknown
-): value is Record<string, unknown> {
-  return (
-    typeof value === "object"
-    && value !== null
-    && !Array.isArray(value)
-  );
-}
 
 function isWebSocketMessage(
   data: unknown

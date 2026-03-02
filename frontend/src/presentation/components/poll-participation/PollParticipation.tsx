@@ -40,6 +40,7 @@ export const PollParticipation = observer(
         <PollParticipationSubmitButton
           disabled={!vm.canSubmit}
           isSubmitting={vm.isSubmitting}
+          onSubmit={vm.submit}
         />
       </div>
     );

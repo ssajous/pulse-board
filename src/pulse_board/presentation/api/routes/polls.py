@@ -228,7 +228,7 @@ async def activate_poll(
         id=str(result.id),
         event_id=str(result.event_id),
         question=result.question,
-        poll_type="multiple_choice",
+        poll_type=result.poll_type,
         options=[
             PollOptionSchema(id=opt["id"], text=opt["text"])
             for opt in result.options
@@ -263,7 +263,6 @@ async def submit_poll_response(
     get_event: GetEventUseCase = Depends(
         get_get_event_use_case,
     ),
-    poll_repo: PollRepository = Depends(get_poll_repository),
     publisher: EventPublisher = Depends(get_event_publisher),
 ) -> SubmitPollResponseSchema:
     """Submit a response to a poll."""
@@ -276,33 +275,28 @@ async def submit_poll_response(
     )
 
     try:
-        poll = await asyncio.to_thread(
-            poll_repo.get_by_id,
+        event = await asyncio.to_thread(
+            get_event.execute,
+            result.event_id,
+        )
+        channel = f"event:{event.code}"
+        poll_results = await asyncio.to_thread(
+            results_use_case.execute,
             poll_id,
         )
-        if poll is not None:
-            event = await asyncio.to_thread(
-                get_event.execute,
-                poll.event_id,
-            )
-            channel = f"event:{event.code}"
-            poll_results = await asyncio.to_thread(
-                results_use_case.execute,
-                poll_id,
-            )
-            await publisher.publish_poll_results_updated_to_channel(
-                channel,
-                poll_id,
-                [
-                    {
-                        "option_id": str(opt.option_id),
-                        "text": opt.text,
-                        "count": opt.count,
-                        "percentage": opt.percentage,
-                    }
-                    for opt in poll_results.options
-                ],
-            )
+        await publisher.publish_poll_results_updated_to_channel(
+            channel,
+            poll_id,
+            [
+                {
+                    "option_id": str(opt.option_id),
+                    "text": opt.text,
+                    "count": opt.count,
+                    "percentage": opt.percentage,
+                }
+                for opt in poll_results.options
+            ],
+        )
     except Exception:
         logger.warning(
             "Failed to broadcast poll results",
