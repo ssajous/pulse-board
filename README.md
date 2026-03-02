@@ -173,7 +173,13 @@ pulse-board/
 │   ├── unit/                     # Unit tests (mirrors src/ structure)
 │   └── integration/              # Integration tests
 ├── migrations/                   # Alembic database migrations
-├── docs/adr/                     # Architecture Decision Records
+├── docs/                          # Project documentation
+│   ├── architecture/              # Architecture overview and ADRs
+│   ├── guides/                    # Getting started, dev setup, deployment
+│   ├── testing/                   # Testing strategy and conventions
+│   ├── database/                  # Migration guide
+│   ├── operations/                # Docker reference
+│   └── code-style/                # Code conventions
 ├── docker-compose.yml            # Development infrastructure
 ├── docker-compose.prod.yml       # Production stack
 ├── Dockerfile                    # Production container build
@@ -249,18 +255,29 @@ The production compose file (`docker-compose.prod.yml`) includes health checks, 
 
 Detailed documentation lives in the `docs/` directory:
 
+- [Architecture Overview](docs/architecture/overview.md) -- system design, components, and data flow
+- [Getting Started](docs/guides/getting-started.md) -- tutorial for first-time setup
+- [Development Setup](docs/guides/development-setup.md) -- full dev environment configuration
+- [Deployment Guide](docs/guides/deployment.md) -- Docker deployment for local and production
+- [Docker Reference](docs/operations/docker.md) -- Docker Compose services and troubleshooting
+- [Database Migrations](docs/database/migration-guide.md) -- Alembic migration workflow
+- [Code Style Guide](docs/code-style/style-guide.md) -- conventions, tools, and review checklist
 - [Testing Strategy](docs/testing/testing-strategy.md) -- testing philosophy, pyramid, and coverage goals
-- [Test Conventions](docs/testing/test-conventions.md) -- naming, patterns, and step-by-step checklists for adding tests
+- [Test Conventions](docs/testing/test-conventions.md) -- naming, patterns, and step-by-step checklists
 
 ## Architecture Decision Records
 
-Design decisions are documented as ADRs in the `docs/adr/` directory:
+Design decisions are documented as ADRs in `docs/architecture/decisions/`:
 
-- [ADR 001: Frontend Technology Stack](docs/adr/001-frontend-technology-stack.md)
-- [ADR 002: Backend Technology Stack](docs/adr/002-backend-technology-stack.md)
-- [ADR 003: Browser Fingerprinting](docs/adr/003-browser-fingerprinting.md)
-- [ADR 004: Real-Time WebSockets](docs/adr/004-realtime-websockets.md)
-- [ADR 005: State Management - MobX MVVM](docs/adr/005-state-management-mobx-mvvm.md)
+- [ADR 0001: Frontend Technology Stack](docs/architecture/decisions/0001-frontend-technology-stack.md)
+- [ADR 0002: Backend Technology Stack](docs/architecture/decisions/0002-backend-technology-stack.md)
+- [ADR 0003: Browser Fingerprinting](docs/architecture/decisions/0003-browser-fingerprinting.md)
+- [ADR 0004: Real-Time WebSockets](docs/architecture/decisions/0004-realtime-websockets.md)
+- [ADR 0005: State Management - MobX MVVM](docs/architecture/decisions/0005-state-management-mobx-mvvm.md)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branch strategy, commit conventions, PR process, and code quality requirements.
 
 ## License
 
