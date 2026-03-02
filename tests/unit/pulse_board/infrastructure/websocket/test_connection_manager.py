@@ -447,3 +447,272 @@ class TestConnectionLimits:
 
         ws2.accept.assert_awaited_once()
         assert ws2 in manager._connections
+
+
+class TestConnectToChannel:
+    """Tests for ConnectionManager.connect_to_channel."""
+
+    @pytest.mark.asyncio
+    async def test_connects_websocket_to_channel(self) -> None:
+        """Should accept, track globally, and register in channel."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws, "event:123")
+
+        ws.accept.assert_awaited_once()
+        assert ws in manager._connections
+        assert ws in manager._channels["event:123"]
+
+    @pytest.mark.asyncio
+    async def test_creates_channel_on_first_connect(self) -> None:
+        """Should create the channel set if it does not exist."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+
+        assert "new-channel" not in manager._channels
+        await manager.connect_to_channel(ws, "new-channel")
+
+        assert "new-channel" in manager._channels
+
+    @pytest.mark.asyncio
+    async def test_multiple_websockets_same_channel(self) -> None:
+        """Should track multiple connections in the same channel."""
+        manager = ConnectionManager()
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws1, "event:abc")
+        await manager.connect_to_channel(ws2, "event:abc")
+
+        assert len(manager._channels["event:abc"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_rejects_at_global_limit(self) -> None:
+        """Should reject channel connection at global limit."""
+        manager = ConnectionManager(
+            max_connections=1,
+            max_connections_per_ip=100,
+        )
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws1, "event:1")
+        await manager.connect_to_channel(ws2, "event:1")
+
+        ws2.accept.assert_not_awaited()
+        ws2.close.assert_awaited_once_with(code=1013)
+        assert "event:1" in manager._channels
+        assert len(manager._channels["event:1"]) == 1
+
+
+class TestDisconnectFromChannel:
+    """Tests for ConnectionManager.disconnect_from_channel."""
+
+    @pytest.mark.asyncio
+    async def test_removes_from_channel_and_global(self) -> None:
+        """Should remove websocket from both channel and global set."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws, "event:123")
+        await manager.disconnect_from_channel(ws, "event:123")
+
+        assert ws not in manager._connections
+        assert "event:123" not in manager._channels
+
+    @pytest.mark.asyncio
+    async def test_removes_empty_channel(self) -> None:
+        """Should clean up channel dict when last connection leaves."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws, "event:cleanup")
+        await manager.disconnect_from_channel(ws, "event:cleanup")
+
+        assert "event:cleanup" not in manager._channels
+
+    @pytest.mark.asyncio
+    async def test_other_connections_remain_in_channel(self) -> None:
+        """Should not affect other connections in the same channel."""
+        manager = ConnectionManager()
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws1, "event:stay")
+        await manager.connect_to_channel(ws2, "event:stay")
+        await manager.disconnect_from_channel(ws1, "event:stay")
+
+        assert ws2 in manager._channels["event:stay"]
+        assert ws1 not in manager._channels["event:stay"]
+
+    @pytest.mark.asyncio
+    async def test_disconnect_nonexistent_channel_is_noop(self) -> None:
+        """Disconnecting from an unregistered channel should not raise."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+
+        await manager.disconnect_from_channel(ws, "nonexistent")
+
+        assert len(manager._connections) == 0
+
+
+class TestBroadcastToChannel:
+    """Tests for ConnectionManager.broadcast_to_channel."""
+
+    @pytest.mark.asyncio
+    async def test_sends_to_all_channel_connections(self) -> None:
+        """Should send message to every websocket in the channel."""
+        manager = ConnectionManager()
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws1, "event:abc")
+        await manager.connect_to_channel(ws2, "event:abc")
+
+        msg = {"type": "test", "data": "hello"}
+        await manager.broadcast_to_channel("event:abc", msg)
+
+        ws1.send_json.assert_awaited_once_with(msg)
+        ws2.send_json.assert_awaited_once_with(msg)
+
+    @pytest.mark.asyncio
+    async def test_does_not_send_to_other_channels(self) -> None:
+        """Should not send messages to connections in other channels."""
+        manager = ConnectionManager()
+        ws1 = _make_mock_websocket()
+        ws2 = _make_mock_websocket()
+
+        await manager.connect_to_channel(ws1, "event:target")
+        await manager.connect_to_channel(ws2, "event:other")
+
+        await manager.broadcast_to_channel(
+            "event:target",
+            {"type": "targeted"},
+        )
+
+        ws1.send_json.assert_awaited_once()
+        ws2.send_json.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_noop_for_empty_channel(self) -> None:
+        """Should not raise when broadcasting to nonexistent channel."""
+        manager = ConnectionManager()
+
+        await manager.broadcast_to_channel(
+            "nonexistent",
+            {"type": "test"},
+        )
+
+    @pytest.mark.asyncio
+    async def test_removes_dead_connections_from_channel(self) -> None:
+        """Dead connections should be removed from both channel and global."""
+        manager = ConnectionManager()
+        alive = _make_mock_websocket()
+        dead = _make_mock_websocket()
+        dead.send_json.side_effect = RuntimeError("closed")
+
+        await manager.connect_to_channel(alive, "event:cleanup")
+        await manager.connect_to_channel(dead, "event:cleanup")
+
+        await manager.broadcast_to_channel(
+            "event:cleanup",
+            {"type": "test"},
+        )
+
+        assert dead not in manager._connections
+        assert dead not in manager._channels.get("event:cleanup", set())
+        assert alive in manager._channels["event:cleanup"]
+
+    @pytest.mark.asyncio
+    async def test_cleans_up_empty_channel_after_dead_removal(
+        self,
+    ) -> None:
+        """Should delete channel key when all connections are dead."""
+        manager = ConnectionManager()
+        dead = _make_mock_websocket()
+        dead.send_json.side_effect = RuntimeError("closed")
+
+        await manager.connect_to_channel(dead, "event:doomed")
+
+        await manager.broadcast_to_channel(
+            "event:doomed",
+            {"type": "test"},
+        )
+
+        assert "event:doomed" not in manager._channels
+
+
+class TestChannelPublishMethods:
+    """Tests for channel-scoped publish convenience methods."""
+
+    @pytest.mark.asyncio
+    async def test_publish_score_update_to_channel(self) -> None:
+        """Should broadcast score_update to the correct channel."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+        await manager.connect_to_channel(ws, "event:abc")
+
+        topic_id = uuid.uuid4()
+        await manager.publish_score_update_to_channel(
+            "event:abc",
+            topic_id,
+            score=42,
+        )
+
+        ws.send_json.assert_awaited_once_with(
+            {
+                "type": "score_update",
+                "topic_id": str(topic_id),
+                "score": 42,
+            }
+        )
+
+    @pytest.mark.asyncio
+    async def test_publish_topic_censured_to_channel(self) -> None:
+        """Should broadcast topic_censured to the correct channel."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+        await manager.connect_to_channel(ws, "event:xyz")
+
+        topic_id = uuid.uuid4()
+        await manager.publish_topic_censured_to_channel(
+            "event:xyz",
+            topic_id,
+        )
+
+        ws.send_json.assert_awaited_once_with(
+            {
+                "type": "topic_censured",
+                "topic_id": str(topic_id),
+            }
+        )
+
+    @pytest.mark.asyncio
+    async def test_publish_new_topic_to_channel(self) -> None:
+        """Should broadcast new_topic to the correct channel."""
+        manager = ConnectionManager()
+        ws = _make_mock_websocket()
+        await manager.connect_to_channel(ws, "event:new")
+
+        topic_id = uuid.uuid4()
+        created_at = datetime(2026, 3, 1, 12, 0, 0, tzinfo=UTC)
+        await manager.publish_new_topic_to_channel(
+            "event:new",
+            topic_id,
+            "Channel topic",
+            0,
+            created_at,
+        )
+
+        ws.send_json.assert_awaited_once_with(
+            {
+                "type": "new_topic",
+                "topic": {
+                    "id": str(topic_id),
+                    "content": "Channel topic",
+                    "score": 0,
+                    "created_at": "2026-03-01T12:00:00+00:00",
+                },
+            }
+        )
