@@ -23,13 +23,20 @@ class Topic:
     content: str
     score: int
     created_at: datetime
+    event_id: uuid.UUID | None = None
 
     @classmethod
-    def create(cls, content: str) -> "Topic":
+    def create(
+        cls,
+        content: str,
+        *,
+        event_id: uuid.UUID | None = None,
+    ) -> "Topic":
         """Create a new Topic with validated content.
 
         Args:
             content: The topic text (max 255 characters).
+            event_id: Optional UUID of the parent event.
 
         Returns:
             A new Topic instance with a generated id and timestamp.
@@ -46,6 +53,7 @@ class Topic:
             content=sanitized,
             score=0,
             created_at=datetime.now(UTC),
+            event_id=event_id,
         )
 
     @staticmethod

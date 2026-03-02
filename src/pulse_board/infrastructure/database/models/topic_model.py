@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from pulse_board.infrastructure.database.base import Base
@@ -21,4 +21,8 @@ class TopicModel(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
+    )
+    event_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("events.id", ondelete="SET NULL"),
+        nullable=True,
     )

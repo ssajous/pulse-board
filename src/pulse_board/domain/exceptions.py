@@ -19,3 +19,15 @@ class EntityNotFoundError(DomainError):
 
 class DuplicateVoteError(DomainError):
     """Raised when a duplicate vote is detected."""
+
+
+class EventNotFoundError(DomainError):
+    """Raised when a requested event does not exist."""
+
+
+class EventNotActiveError(DomainError):
+    """Raised when an operation requires an active event."""
+
+
+class CodeGenerationError(DomainError):
+    """Raised when a unique join code cannot be generated."""
