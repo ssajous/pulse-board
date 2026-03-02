@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. Use mvvm-mobx-specialist agent for state management and setting up MVVM architecture on the frontend
 5. Use quality-engineer agent to plan and write unit, integration, and end-to-end tests
 6. Use the security-review skill to ensure proper security best practices on the current work branch
-7. Use code-simplifier skill to clean up code before final completion
+7. Use /simplify command to clean up code before final completion
 
 
 When switching from plan mode to implementation mode, use the correct agents for implementation.
