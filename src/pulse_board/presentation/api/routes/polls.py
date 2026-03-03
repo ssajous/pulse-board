@@ -4,7 +4,7 @@ import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from pulse_board.application.use_cases.activate_poll import (
     ActivatePollUseCase,
@@ -17,6 +17,8 @@ from pulse_board.application.use_cases.get_event import (
 )
 from pulse_board.application.use_cases.get_poll_results import (
     GetPollResultsUseCase,
+    OpenTextPollResultsResult,
+    RatingPollResultsResult,
 )
 from pulse_board.application.use_cases.submit_poll_response import (
     SubmitPollResponseUseCase,
@@ -40,11 +42,14 @@ from pulse_board.presentation.api.dependencies import (
 from pulse_board.presentation.api.schemas.polls import (
     ActivatePollRequest,
     CreatePollRequest,
+    OpenTextPollResultsResponse,
+    OpenTextResponseSchema,
     PollListResponse,
     PollOptionResultSchema,
     PollOptionSchema,
     PollResultsResponse,
     PollSchema,
+    RatingPollResultsResponse,
     SubmitPollResponseRequest,
     SubmitPollResponseSchema,
 )
@@ -81,7 +86,10 @@ def _poll_entity_to_schema(poll: Poll) -> PollSchema:
     response_model=PollSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create a poll for an event",
-    description="Create a new multiple-choice poll within an event.",
+    description=(
+        "Create a new poll within an event. Supports multiple_choice, "
+        "rating, and open_text poll types."
+    ),
     responses={
         201: {"description": "Poll created successfully"},
         404: {"description": "Event not found"},
@@ -101,6 +109,7 @@ async def create_poll(
         event_id,
         request.question,
         request.options,
+        request.poll_type,
     )
 
     return PollSchema(
@@ -240,12 +249,16 @@ async def activate_poll(
     response_model=SubmitPollResponseSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Submit a response to a poll",
-    description="Submit a vote for a specific option in a poll.",
+    description=(
+        "Submit a response to an active poll. For multiple_choice polls, "
+        "provide option_id. For rating polls, provide response_value as an "
+        "integer 1-5. For open_text polls, provide response_value as a string."
+    ),
     responses={
         201: {"description": "Response submitted"},
         404: {"description": "Poll not found"},
-        409: {"description": ("Already responded or poll is inactive")},
-        422: {"description": "Invalid option"},
+        409: {"description": "Already responded or poll is inactive"},
+        422: {"description": "Invalid option or response value"},
     },
 )
 async def submit_poll_response(
@@ -263,12 +276,13 @@ async def submit_poll_response(
     publisher: EventPublisher = Depends(get_event_publisher),
 ) -> SubmitPollResponseSchema:
     """Submit a response to a poll."""
-    option_uuid = uuid.UUID(request.option_id)
+    option_uuid = uuid.UUID(request.option_id) if request.option_id else None
     result = await asyncio.to_thread(
         use_case.execute,
         poll_id,
         request.fingerprint_id,
         option_uuid,
+        request.response_value,
     )
 
     try:
@@ -277,22 +291,36 @@ async def submit_poll_response(
             result.event_id,
         )
         channel = f"event:{event.code}"
-        poll_results = await asyncio.to_thread(
-            results_use_case.execute,
-            poll_id,
-        )
+        poll_results = await asyncio.to_thread(results_use_case.execute, poll_id)
+
+        if isinstance(poll_results, RatingPollResultsResult):
+            results_payload: dict[str, object] = {
+                "average_rating": poll_results.average_rating,
+                "total_votes": poll_results.total_votes,
+                "distribution": poll_results.distribution,
+            }
+        elif isinstance(poll_results, OpenTextPollResultsResult):
+            results_payload = {
+                "total_responses": poll_results.total_responses,
+            }
+        else:
+            results_payload = {
+                "options": [
+                    {
+                        "option_id": str(opt.option_id),
+                        "text": opt.text,
+                        "count": opt.count,
+                        "percentage": opt.percentage,
+                    }
+                    for opt in poll_results.options
+                ]
+            }
+
         await publisher.publish_poll_results_updated_to_channel(
             channel,
             poll_id,
-            [
-                {
-                    "option_id": str(opt.option_id),
-                    "text": opt.text,
-                    "count": opt.count,
-                    "percentage": opt.percentage,
-                }
-                for opt in poll_results.options
-            ],
+            result.poll_type,
+            results_payload,
         )
     except Exception:
         logger.warning(
@@ -303,16 +331,20 @@ async def submit_poll_response(
     return SubmitPollResponseSchema(
         id=str(result.id),
         poll_id=str(result.poll_id),
-        option_id=str(result.option_id),
+        option_id=str(result.option_id) if result.option_id else None,
         created_at=result.created_at,
     )
 
 
 @polls_router.get(
     "/{poll_id}/results",
-    response_model=PollResultsResponse,
+    response_model=None,
     summary="Get poll results",
-    description="Retrieve aggregated results for a poll.",
+    description=(
+        "Retrieve aggregated results for a poll. The response shape varies "
+        "by poll type: multiple_choice returns per-option counts, rating returns "
+        "average and distribution, open_text returns paginated responses."
+    ),
     responses={
         200: {"description": "Poll results"},
         404: {"description": "Poll not found"},
@@ -320,15 +352,52 @@ async def submit_poll_response(
 )
 async def get_poll_results(
     poll_id: uuid.UUID,
+    page: int = Query(default=1, ge=1, description="Page number for open_text results"),
+    page_size: int = Query(
+        default=20,
+        ge=1,
+        le=100,
+        description="Page size for open_text results",
+    ),
     use_case: GetPollResultsUseCase = Depends(
         get_get_poll_results_use_case,
     ),
-) -> PollResultsResponse:
+) -> PollResultsResponse | RatingPollResultsResponse | OpenTextPollResultsResponse:
     """Get aggregated results for a poll."""
     result = await asyncio.to_thread(
         use_case.execute,
         poll_id,
+        page,
+        page_size,
     )
+
+    if isinstance(result, RatingPollResultsResult):
+        return RatingPollResultsResponse(
+            poll_id=str(result.poll_id),
+            question=result.question,
+            total_votes=result.total_votes,
+            average_rating=result.average_rating,
+            distribution=result.distribution,
+        )
+
+    if isinstance(result, OpenTextPollResultsResult):
+        return OpenTextPollResultsResponse(
+            poll_id=str(result.poll_id),
+            question=result.question,
+            total_responses=result.total_responses,
+            responses=[
+                OpenTextResponseSchema(
+                    id=str(r.id),
+                    text=r.text,
+                    created_at=r.created_at,
+                )
+                for r in result.responses
+            ],
+            page=result.page,
+            page_size=result.page_size,
+            total_pages=result.total_pages,
+        )
+
     return PollResultsResponse(
         poll_id=str(result.poll_id),
         question=result.question,

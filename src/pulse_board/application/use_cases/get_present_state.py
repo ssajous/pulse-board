@@ -6,7 +6,9 @@ from datetime import datetime
 
 from pulse_board.application.use_cases.get_poll_results import (
     GetPollResultsUseCase,
+    OpenTextPollResultsResult,
     PollOptionResult,
+    RatingPollResultsResult,
 )
 from pulse_board.domain.exceptions import EventNotFoundError
 from pulse_board.domain.ports.event_repository_port import EventRepository
@@ -93,11 +95,20 @@ class GetPresentStateUseCase:
                 poll_repository=self._poll_repo,
                 poll_response_repository=self._poll_response_repo,
             ).execute(active_poll_entity.id)
+            if isinstance(results, RatingPollResultsResult):
+                total_votes = results.total_votes
+                options: list[PollOptionResult] = []
+            elif isinstance(results, OpenTextPollResultsResult):
+                total_votes = results.total_responses
+                options = []
+            else:
+                total_votes = results.total_votes
+                options = results.options
             active_poll = PresentActivePoll(
                 poll_id=results.poll_id,
                 question=results.question,
-                total_votes=results.total_votes,
-                options=results.options,
+                total_votes=total_votes,
+                options=options,
             )
 
         # Top topics

@@ -7,6 +7,8 @@ import pytest
 
 from pulse_board.domain.entities.poll import (
     MAX_QUESTION_LENGTH,
+    RATING_OPTIONS,
+    VALID_POLL_TYPES,
     Poll,
     PollOption,
 )
@@ -58,16 +60,27 @@ class TestPollCreate:
 
         assert poll.poll_type == "multiple_choice"
 
-    def test_create_sets_poll_type_custom(self) -> None:
-        """Should store a custom poll type."""
+    def test_create_sets_poll_type_rating(self) -> None:
+        """Should accept 'rating' as a valid poll type."""
         poll = Poll.create(
             event_id=uuid.uuid4(),
             question="Q?",
-            option_texts=["A", "B"],
-            poll_type="word_cloud",
+            option_texts=[],
+            poll_type="rating",
         )
 
-        assert poll.poll_type == "word_cloud"
+        assert poll.poll_type == "rating"
+
+    def test_create_sets_poll_type_open_text(self) -> None:
+        """Should accept 'open_text' as a valid poll type."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="Q?",
+            option_texts=[],
+            poll_type="open_text",
+        )
+
+        assert poll.poll_type == "open_text"
 
     def test_create_generates_poll_options(self) -> None:
         """Should create PollOption objects with UUIDs."""
@@ -140,6 +153,29 @@ class TestPollCreate:
 
         assert [opt.text for opt in poll.options] == ["Red", "Blue"]
 
+    def test_create_rating_poll_uses_rating_options(self) -> None:
+        """Rating polls should use RATING_OPTIONS (1-5) ignoring option_texts."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="How do you rate this?",
+            option_texts=["ignored"],
+            poll_type="rating",
+        )
+
+        assert len(poll.options) == len(RATING_OPTIONS)
+        assert [opt.text for opt in poll.options] == RATING_OPTIONS
+
+    def test_create_open_text_poll_has_no_options(self) -> None:
+        """Open text polls should have an empty options list."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="Tell us your thoughts.",
+            option_texts=["ignored"],
+            poll_type="open_text",
+        )
+
+        assert poll.options == []
+
 
 class TestPollCreateValidation:
     """Tests for Poll.create validation rules."""
@@ -208,6 +244,22 @@ class TestPollCreateValidation:
                 question="Q?",
                 option_texts=["   ", "Valid"],
             )
+
+    def test_unknown_poll_type_raises_validation_error(self) -> None:
+        """Should raise ValidationError for unknown poll type."""
+        with pytest.raises(ValidationError, match="Unknown poll type 'word_cloud'"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="Q?",
+                option_texts=["A", "B"],
+                poll_type="word_cloud",
+            )
+
+    def test_valid_poll_types_constant_contains_expected_types(self) -> None:
+        """VALID_POLL_TYPES should contain the three supported types."""
+        assert "multiple_choice" in VALID_POLL_TYPES
+        assert "rating" in VALID_POLL_TYPES
+        assert "open_text" in VALID_POLL_TYPES
 
 
 class TestPollActivateDeactivate:
