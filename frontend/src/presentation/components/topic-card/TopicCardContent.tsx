@@ -1,10 +1,12 @@
 import { memo } from "react";
-import { Clock, AlertCircle } from "lucide-react";
+import { Clock, AlertCircle, Star, CheckCircle } from "lucide-react";
+import type { TopicStatus } from "@domain/entities/Topic";
 
 interface TopicCardContentProps {
   content: string;
   createdAt: string;
   score: number;
+  status?: TopicStatus;
 }
 
 function formatTimestamp(iso: string): string {
@@ -21,8 +23,11 @@ export const TopicCardContent = memo(function TopicCardContent({
   content,
   createdAt,
   score,
+  status,
 }: TopicCardContentProps) {
   const isDanger = score <= -3;
+  const isHighlighted = status === "highlighted";
+  const isAnswered = status === "answered";
 
   return (
     <div className="relative flex-1 p-5">
@@ -31,12 +36,26 @@ export const TopicCardContent = memo(function TopicCardContent({
           <Clock size={12} />
           {formatTimestamp(createdAt)}
         </div>
-        {isDanger && (
-          <div className="flex items-center gap-1 rounded-full border border-rose-500/20 bg-rose-500/20 px-2 py-1 text-xs font-bold text-rose-300">
-            <AlertCircle size={12} />
-            Risk of Removal
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isHighlighted && (
+            <div className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/20 px-2 py-1 text-xs font-bold text-amber-300">
+              <Star size={12} />
+              Highlighted
+            </div>
+          )}
+          {isAnswered && (
+            <div className="flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1 text-xs font-bold text-green-300">
+              <CheckCircle size={12} />
+              Answered
+            </div>
+          )}
+          {isDanger && (
+            <div className="flex items-center gap-1 rounded-full border border-rose-500/20 bg-rose-500/20 px-2 py-1 text-xs font-bold text-rose-300">
+              <AlertCircle size={12} />
+              Risk of Removal
+            </div>
+          )}
+        </div>
       </div>
       <p className="break-words text-lg leading-relaxed text-slate-200">
         {content}

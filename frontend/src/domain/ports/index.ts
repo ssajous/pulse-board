@@ -8,3 +8,8 @@ export type {
 export type { EventApiPort, CreateEventRequest } from "./EventApiPort";
 export type { PollApiPort } from "./PollApiPort";
 export type { PresentStateApiPort } from "./PresentStateApiPort";
+export type {
+  HostApiPort,
+  UpdateTopicStatusResponse,
+  CloseEventResponse,
+} from "./HostApiPort";

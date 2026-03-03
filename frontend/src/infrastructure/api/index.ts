@@ -3,3 +3,4 @@ export { VoteApiClient } from "./voteApiClient";
 export { EventApiClient } from "./eventApiClient";
 export { EventTopicApiClient } from "./eventTopicApiClient";
 export { PresentStateApiClient } from "./presentStateApiClient";
+export { HostApiClient } from "./hostApiClient";

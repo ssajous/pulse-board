@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { observer } from "mobx-react-lite";
-import { MessageSquarePlus } from "lucide-react";
+import { MessageSquarePlus, XCircle } from "lucide-react";
 import { useTopicsViewModel } from "@presentation/view-models";
 import { TopicFormInput } from "./TopicFormInput";
 import { TopicFormSubmitButton } from "./TopicFormSubmitButton";
@@ -25,6 +25,22 @@ export const TopicForm = observer(function TopicForm() {
       setContent("");
     }
   };
+
+  if (vm.isEventClosed) {
+    return (
+      <div
+        id="topic-form"
+        className="mb-8 rounded-xl border border-slate-700 bg-slate-800 p-6 shadow-lg shadow-slate-900/20"
+      >
+        <div className="flex items-center gap-3 text-slate-400">
+          <XCircle size={20} className="text-slate-500" />
+          <p className="text-base font-medium">
+            This event has ended.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

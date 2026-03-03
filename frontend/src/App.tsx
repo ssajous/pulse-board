@@ -5,10 +5,8 @@ import {
   EventJoinPage,
   EventBoardPage,
 } from "@presentation/pages";
-import {
-  EventPresentPage,
-  EventAdminPage,
-} from "@presentation/components/events";
+import { EventPresentPage } from "@presentation/components/events";
+import { HostDashboard } from "@presentation/components/host-dashboard";
 
 function App() {
   return (
@@ -24,7 +22,7 @@ function App() {
         />
         <Route
           path="/events/:code/admin"
-          element={<EventAdminPage />}
+          element={<HostDashboard />}
         />
       </Routes>
     </div>

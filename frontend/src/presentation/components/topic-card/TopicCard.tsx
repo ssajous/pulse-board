@@ -11,11 +11,16 @@ interface TopicCardProps {
 
 export const TopicCard = observer(function TopicCard({ topic }: TopicCardProps) {
   const vm = useTopicsViewModel();
+  const isHighlighted = topic.status === "highlighted";
 
   return (
     <div
       id={`topic-card-${topic.id}`}
-      className="flex animate-fade-in flex-col overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-lg shadow-slate-900/20 transition-all duration-200 hover:shadow-xl hover:shadow-slate-900/30 sm:flex-row"
+      className={`flex animate-fade-in flex-col overflow-hidden rounded-xl border bg-slate-800 shadow-lg shadow-slate-900/20 transition-all duration-200 hover:shadow-xl hover:shadow-slate-900/30 sm:flex-row ${
+        isHighlighted
+          ? "border-l-4 border-amber-500 border-slate-700"
+          : "border-slate-700"
+      }`}
     >
       <TopicCardScore
         topicId={topic.id}
@@ -31,6 +36,7 @@ export const TopicCard = observer(function TopicCard({ topic }: TopicCardProps) 
           content={topic.content}
           createdAt={topic.created_at}
           score={topic.score}
+          status={topic.status}
         />
         <TopicCardRemovalBar score={topic.score} />
       </div>
