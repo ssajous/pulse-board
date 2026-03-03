@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import type { EventApiPort } from "@domain/ports/EventApiPort";
+import type { FingerprintPort } from "@domain/ports/FingerprintPort";
 
 export class EventCreationViewModel {
   title = "";
@@ -11,9 +12,11 @@ export class EventCreationViewModel {
   createdCode: string | null = null;
 
   private readonly _api: EventApiPort;
+  private readonly _fingerprint: FingerprintPort;
 
-  constructor(api: EventApiPort) {
+  constructor(api: EventApiPort, fingerprint: FingerprintPort) {
     this._api = api;
+    this._fingerprint = fingerprint;
     makeAutoObservable(this, {}, { autoBind: true });
   }
 
@@ -46,12 +49,20 @@ export class EventCreationViewModel {
     this.isSubmitting = true;
     this.error = null;
     try {
+      const fingerprint = await this._fingerprint.getFingerprint();
       const event = await this._api.createEvent({
         title: this.title.trim(),
         description: this.description.trim() || undefined,
         start_date: this.startDate || undefined,
         end_date: this.endDate || undefined,
+        creator_fingerprint: fingerprint,
       });
+      if (event.creator_token) {
+        localStorage.setItem(
+          `creator_token:${event.code}`,
+          event.creator_token,
+        );
+      }
       runInAction(() => {
         this.createdCode = event.code;
         this.isSubmitting = false;

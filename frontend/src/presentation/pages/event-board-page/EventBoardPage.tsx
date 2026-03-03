@@ -4,6 +4,7 @@ import { observer } from "mobx-react-lite";
 import { EventApiClient } from "@infrastructure/api/eventApiClient";
 import { EventBoardViewModel } from "@presentation/view-models/EventBoardViewModel";
 import { TopicsViewModelProvider } from "@presentation/view-models/TopicsViewModelContext";
+import { PollParticipationViewModelProvider } from "@presentation/view-models/PollParticipationViewModelContext";
 import { Header } from "@presentation/components/layout";
 import { TopicForm } from "@presentation/components/topic-form";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@presentation/components/topic-list";
 import { ToastContainer } from "@presentation/components/toast";
 import { EventBoardHeader } from "@presentation/components/event-board-header";
+import { PollParticipation } from "@presentation/components/poll-participation";
 
 const EventBoardContent = observer(function EventBoardContent({
   vm,
@@ -40,7 +42,14 @@ const EventBoardContent = observer(function EventBoardContent({
 
   return (
     <TopicsViewModelProvider value={vm.topicsViewModel}>
-      <EventBoardHeader event={vm.event} />
+      <EventBoardHeader event={vm.event} isCreator={vm.isCreator} />
+      {vm.pollParticipationViewModel && (
+        <PollParticipationViewModelProvider
+          value={vm.pollParticipationViewModel}
+        >
+          <PollParticipation />
+        </PollParticipationViewModelProvider>
+      )}
       <TopicForm />
       <TopicListHeader />
       <TopicList />

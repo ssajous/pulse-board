@@ -31,3 +31,15 @@ class EventNotActiveError(DomainError):
 
 class CodeGenerationError(DomainError):
     """Raised when a unique join code cannot be generated."""
+
+
+class DuplicateResponseError(DomainError):
+    """Raised when a participant has already responded to a poll."""
+
+
+class PollNotActiveError(DomainError):
+    """Raised when a poll operation requires an active poll."""
+
+
+class InvalidPollOptionError(DomainError):
+    """Raised when a submitted option does not belong to the poll."""

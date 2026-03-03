@@ -25,6 +25,35 @@ interface EventResponse {
   created_at: string;
 }
 
+export interface PollOptionResponse {
+  id: string;
+  text: string;
+}
+
+export interface PollResponse {
+  id: string;
+  event_id: string;
+  question: string;
+  poll_type: string;
+  options: PollOptionResponse[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface PollOptionResultResponse {
+  option_id: string;
+  text: string;
+  count: number;
+  percentage: number;
+}
+
+export interface PollResultsResponse {
+  poll_id: string;
+  question: string;
+  total_votes: number;
+  options: PollOptionResultResponse[];
+}
+
 export async function resetDatabase(): Promise<void> {
   const response = await fetch(`${API_BASE}/test/reset`, {
     method: "POST",
@@ -128,4 +157,99 @@ export async function createEventTopicViaApi(
   }
 
   return response.json() as Promise<TopicResponse>;
+}
+
+export async function createPollViaApi(
+  eventId: string,
+  question: string,
+  options: string[]
+): Promise<PollResponse> {
+  const response = await fetch(`${API_BASE}/events/${eventId}/polls`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, options }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to create poll: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<PollResponse>;
+}
+
+export async function activatePollViaApi(
+  pollId: string
+): Promise<PollResponse> {
+  const response = await fetch(`${API_BASE}/polls/${pollId}/activate`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ activate: true }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to activate poll: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<PollResponse>;
+}
+
+export async function deactivatePollViaApi(
+  pollId: string
+): Promise<PollResponse> {
+  const response = await fetch(`${API_BASE}/polls/${pollId}/activate`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ activate: false }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to deactivate poll: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<PollResponse>;
+}
+
+export async function submitPollResponseViaApi(
+  pollId: string,
+  fingerprintId: string,
+  optionId: string
+): Promise<{ id: string; poll_id: string; option_id: string; created_at: string }> {
+  const response = await fetch(`${API_BASE}/polls/${pollId}/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fingerprint_id: fingerprintId, option_id: optionId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to submit poll response: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<{
+    id: string;
+    poll_id: string;
+    option_id: string;
+    created_at: string;
+  }>;
+}
+
+export async function getPollResultsViaApi(
+  pollId: string
+): Promise<PollResultsResponse> {
+  const response = await fetch(`${API_BASE}/polls/${pollId}/results`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to get poll results: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<PollResultsResponse>;
 }

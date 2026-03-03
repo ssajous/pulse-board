@@ -1,0 +1,1 @@
+export { PollParticipation } from "./PollParticipation";

@@ -23,6 +23,8 @@ class CreateEventResult:
     end_date: datetime | None
     status: EventStatus
     created_at: datetime
+    creator_fingerprint: str | None
+    creator_token: str | None
 
 
 class CreateEventUseCase:
@@ -43,6 +45,7 @@ class CreateEventUseCase:
         description: str | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        creator_fingerprint: str | None = None,
     ) -> CreateEventResult:
         """Create a new event with a generated join code.
 
@@ -51,6 +54,8 @@ class CreateEventUseCase:
             description: Optional event description.
             start_date: Optional scheduled start time.
             end_date: Optional scheduled end time.
+            creator_fingerprint: Optional browser fingerprint
+                of the event creator for admin identification.
 
         Returns:
             CreateEventResult with the created event details.
@@ -67,6 +72,7 @@ class CreateEventUseCase:
             description=description,
             start_date=start_date,
             end_date=end_date,
+            creator_fingerprint=creator_fingerprint,
         )
         saved = self._event_repo.create(event)
         return CreateEventResult(
@@ -78,4 +84,6 @@ class CreateEventUseCase:
             end_date=saved.end_date,
             status=saved.status,
             created_at=saved.created_at,
+            creator_fingerprint=saved.creator_fingerprint,
+            creator_token=saved.creator_token,
         )

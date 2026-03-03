@@ -59,6 +59,37 @@ class TestCreateEventRoute:
         assert body["start_date"] is not None
         assert body["end_date"] is not None
 
+    def test_create_event_with_creator_fingerprint(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Should accept and persist creator_fingerprint field."""
+        response = client.post(
+            "/api/events",
+            json={
+                "title": "My Event",
+                "creator_fingerprint": "fp123",
+            },
+        )
+
+        assert response.status_code == 201
+
+    def test_create_event_returns_creator_token(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Response should include a non-null creator_token."""
+        response = client.post(
+            "/api/events",
+            json={"title": "Token Event"},
+        )
+        body = response.json()
+
+        assert response.status_code == 201
+        assert "creator_token" in body
+        assert body["creator_token"] is not None
+        assert len(body["creator_token"]) > 0
+
     def test_create_event_empty_title_returns_422(
         self,
         client: TestClient,
@@ -301,3 +332,80 @@ class TestCreateEventTopicRoute:
         )
 
         assert response.status_code == 422
+
+
+class TestCheckCreatorRoute:
+    """Tests for GET /api/events/{event_id}/check-creator."""
+
+    def test_check_creator_matching_fingerprint(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Should return is_creator=True when creator_token matches."""
+        create_resp = client.post(
+            "/api/events",
+            json={"title": "Creator Event"},
+        )
+        body = create_resp.json()
+        event_id = body["id"]
+        creator_token = body["creator_token"]
+
+        response = client.get(
+            f"/api/events/{event_id}/check-creator",
+            params={"creator_token": creator_token},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["is_creator"] is True
+
+    def test_check_creator_mismatched_fingerprint(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Should return is_creator=False when creator_token does not match."""
+        create_resp = client.post(
+            "/api/events",
+            json={"title": "Creator Event"},
+        )
+        event_id = create_resp.json()["id"]
+
+        response = client.get(
+            f"/api/events/{event_id}/check-creator",
+            params={"creator_token": "wrong-token"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["is_creator"] is False
+
+    def test_check_creator_wrong_token_returns_false(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Should return is_creator=False when a wrong token is supplied."""
+        create_resp = client.post(
+            "/api/events",
+            json={"title": "Token Event"},
+        )
+        event_id = create_resp.json()["id"]
+
+        response = client.get(
+            f"/api/events/{event_id}/check-creator",
+            params={"creator_token": "definitely-wrong-token"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["is_creator"] is False
+
+    def test_check_creator_nonexistent_event_returns_404(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Should return 404 for nonexistent event."""
+        missing_id = uuid.uuid4()
+
+        response = client.get(
+            f"/api/events/{missing_id}/check-creator",
+            params={"creator_token": "some-token"},
+        )
+
+        assert response.status_code == 404

@@ -40,3 +40,24 @@ export async function waitForTopicToDisappear(
     timeout: DEFAULT_TIMEOUT,
   });
 }
+
+export async function waitForPollToAppear(page: Page): Promise<void> {
+  await expect(page.locator("#poll-participation")).toBeVisible({
+    timeout: DEFAULT_TIMEOUT,
+  });
+}
+
+export async function waitForPollResults(page: Page): Promise<void> {
+  await expect(page.locator("#poll-results")).toBeVisible({
+    timeout: DEFAULT_TIMEOUT,
+  });
+}
+
+export async function waitForPollToDisappear(page: Page): Promise<void> {
+  await expect(page.locator("#poll-participation")).not.toBeVisible({
+    timeout: DEFAULT_TIMEOUT,
+  });
+  await expect(page.locator("#poll-results")).not.toBeVisible({
+    timeout: DEFAULT_TIMEOUT,
+  });
+}

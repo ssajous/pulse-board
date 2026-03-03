@@ -108,6 +108,22 @@ class TestEventCreate:
 
         assert event.description == "spaced"
 
+    def test_create_defaults_creator_fingerprint_to_none(self) -> None:
+        """Should default creator_fingerprint to None when not provided."""
+        event = Event.create(title="My Event", code="123456")
+
+        assert event.creator_fingerprint is None
+
+    def test_create_stores_creator_fingerprint(self) -> None:
+        """Should store a provided creator_fingerprint."""
+        event = Event.create(
+            title="My Event",
+            code="123456",
+            creator_fingerprint="abc123",
+        )
+
+        assert event.creator_fingerprint == "abc123"
+
 
 class TestEventTitleValidation:
     """Tests for title validation rules."""
@@ -217,6 +233,8 @@ class TestEventDirectConstruction:
             end_date=None,
             status=EventStatus.CLOSED,
             created_at=created_at,
+            creator_fingerprint="fp_abc123",
+            creator_token=None,
         )
 
         assert event.id == event_id
@@ -225,3 +243,5 @@ class TestEventDirectConstruction:
         assert event.description == "Desc"
         assert event.status == EventStatus.CLOSED
         assert event.created_at == created_at
+        assert event.creator_fingerprint == "fp_abc123"
+        assert event.creator_token is None

@@ -70,3 +70,33 @@ class EventPublisher(ABC):
     ) -> None:
         """Broadcast a new topic creation to a specific channel."""
         ...
+
+    @abstractmethod
+    async def publish_poll_activated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+        question: str,
+        options: list[dict[str, str]],
+    ) -> None:
+        """Broadcast a poll activation to a specific channel."""
+        ...
+
+    @abstractmethod
+    async def publish_poll_deactivated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+    ) -> None:
+        """Broadcast a poll deactivation to a specific channel."""
+        ...
+
+    @abstractmethod
+    async def publish_poll_results_updated_to_channel(
+        self,
+        channel: str,
+        poll_id: uuid.UUID,
+        results: list[dict[str, object]],
+    ) -> None:
+        """Broadcast updated poll results to a specific channel."""
+        ...

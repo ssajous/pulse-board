@@ -9,10 +9,13 @@ from starlette.responses import JSONResponse
 from pulse_board.domain.exceptions import (
     CodeGenerationError,
     DomainError,
+    DuplicateResponseError,
     DuplicateVoteError,
     EntityNotFoundError,
     EventNotActiveError,
     EventNotFoundError,
+    InvalidPollOptionError,
+    PollNotActiveError,
     ValidationError,
 )
 
@@ -24,6 +27,9 @@ DOMAIN_EXCEPTION_STATUS_MAP: dict[type[DomainError], int] = {
     EventNotFoundError: 404,
     EventNotActiveError: 409,
     DuplicateVoteError: 409,
+    DuplicateResponseError: 409,
+    PollNotActiveError: 409,
+    InvalidPollOptionError: 422,
     CodeGenerationError: 500,
 }
 

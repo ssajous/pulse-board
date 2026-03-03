@@ -1,10 +1,15 @@
+import { Link } from "react-router-dom";
 import type { Event } from "@domain/entities/Event";
 
 interface EventBoardHeaderProps {
   event: Event;
+  isCreator?: boolean;
 }
 
-export function EventBoardHeader({ event }: EventBoardHeaderProps) {
+export function EventBoardHeader({
+  event,
+  isCreator,
+}: EventBoardHeaderProps) {
   return (
     <div
       id="event-board-header"
@@ -23,6 +28,15 @@ export function EventBoardHeader({ event }: EventBoardHeaderProps) {
         <span className="rounded bg-green-600/20 px-2 py-0.5 text-xs font-medium text-green-400">
           {event.status}
         </span>
+        {isCreator && (
+          <Link
+            to={`/events/${event.code}/admin`}
+            id="event-admin-link"
+            className="rounded bg-amber-600/20 px-2 py-0.5 text-xs font-medium text-amber-400 hover:bg-amber-600/30 transition-colors"
+          >
+            Admin
+          </Link>
+        )}
       </div>
     </div>
   );

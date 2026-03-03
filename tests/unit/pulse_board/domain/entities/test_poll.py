@@ -3,7 +3,14 @@
 import uuid
 from datetime import UTC, datetime
 
-from pulse_board.domain.entities.poll import Poll
+import pytest
+
+from pulse_board.domain.entities.poll import (
+    MAX_QUESTION_LENGTH,
+    Poll,
+    PollOption,
+)
+from pulse_board.domain.exceptions import ValidationError
 
 
 class TestPollCreate:
@@ -15,7 +22,7 @@ class TestPollCreate:
         poll = Poll.create(
             event_id=event_id,
             question="Favorite color?",
-            poll_type="multiple_choice",
+            option_texts=["Red", "Blue"],
         )
 
         assert isinstance(poll.id, uuid.UUID)
@@ -26,7 +33,7 @@ class TestPollCreate:
         poll = Poll.create(
             event_id=event_id,
             question="Favorite color?",
-            poll_type="multiple_choice",
+            option_texts=["Red", "Blue"],
         )
 
         assert poll.event_id == event_id
@@ -36,52 +43,51 @@ class TestPollCreate:
         poll = Poll.create(
             event_id=uuid.uuid4(),
             question="What is your role?",
-            poll_type="multiple_choice",
+            option_texts=["Dev", "PM"],
         )
 
         assert poll.question == "What is your role?"
 
-    def test_create_sets_poll_type(self) -> None:
-        """Should store the poll type."""
+    def test_create_sets_poll_type_default(self) -> None:
+        """Should default poll_type to multiple_choice."""
         poll = Poll.create(
             event_id=uuid.uuid4(),
             question="Q?",
+            option_texts=["A", "B"],
+        )
+
+        assert poll.poll_type == "multiple_choice"
+
+    def test_create_sets_poll_type_custom(self) -> None:
+        """Should store a custom poll type."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="Q?",
+            option_texts=["A", "B"],
             poll_type="word_cloud",
         )
 
         assert poll.poll_type == "word_cloud"
 
-    def test_create_defaults_options_to_empty_list(self) -> None:
-        """Should default options to an empty list when None."""
-        poll = Poll.create(
-            event_id=uuid.uuid4(),
-            question="Q?",
-            poll_type="multiple_choice",
-        )
-
-        assert poll.options == []
-
-    def test_create_preserves_provided_options(self) -> None:
-        """Should use the provided options list."""
-        options = [
-            {"id": "a", "text": "Red"},
-            {"id": "b", "text": "Blue"},
-        ]
+    def test_create_generates_poll_options(self) -> None:
+        """Should create PollOption objects with UUIDs."""
         poll = Poll.create(
             event_id=uuid.uuid4(),
             question="Favorite color?",
-            poll_type="multiple_choice",
-            options=options,
+            option_texts=["Red", "Blue", "Green"],
         )
 
-        assert poll.options == options
+        assert len(poll.options) == 3
+        assert all(isinstance(opt, PollOption) for opt in poll.options)
+        assert all(isinstance(opt.id, uuid.UUID) for opt in poll.options)
+        assert [opt.text for opt in poll.options] == ["Red", "Blue", "Green"]
 
     def test_create_defaults_is_active_to_false(self) -> None:
         """New polls should start inactive."""
         poll = Poll.create(
             event_id=uuid.uuid4(),
             question="Q?",
-            poll_type="multiple_choice",
+            option_texts=["A", "B"],
         )
 
         assert poll.is_active is False
@@ -92,7 +98,7 @@ class TestPollCreate:
         poll = Poll.create(
             event_id=uuid.uuid4(),
             question="Q?",
-            poll_type="multiple_choice",
+            option_texts=["A", "B"],
         )
         after = datetime.now(UTC)
 
@@ -104,15 +110,133 @@ class TestPollCreate:
         poll1 = Poll.create(
             event_id=event_id,
             question="Q?",
-            poll_type="mc",
+            option_texts=["A", "B"],
         )
         poll2 = Poll.create(
             event_id=event_id,
             question="Q?",
-            poll_type="mc",
+            option_texts=["A", "B"],
         )
 
         assert poll1.id != poll2.id
+
+    def test_create_strips_question_whitespace(self) -> None:
+        """Should strip leading/trailing whitespace from question."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="  Trimmed?  ",
+            option_texts=["A", "B"],
+        )
+
+        assert poll.question == "Trimmed?"
+
+    def test_create_strips_option_text_whitespace(self) -> None:
+        """Should strip whitespace from option texts."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="Q?",
+            option_texts=["  Red  ", " Blue "],
+        )
+
+        assert [opt.text for opt in poll.options] == ["Red", "Blue"]
+
+
+class TestPollCreateValidation:
+    """Tests for Poll.create validation rules."""
+
+    def test_empty_question_raises_validation_error(self) -> None:
+        """Should raise ValidationError for empty question."""
+        with pytest.raises(ValidationError, match="cannot be empty"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="",
+                option_texts=["A", "B"],
+            )
+
+    def test_whitespace_only_question_raises_validation_error(self) -> None:
+        """Should raise ValidationError for whitespace-only question."""
+        with pytest.raises(ValidationError, match="cannot be empty"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="   ",
+                option_texts=["A", "B"],
+            )
+
+    def test_too_long_question_raises_validation_error(self) -> None:
+        """Should raise ValidationError for question exceeding max length."""
+        long_question = "Q" * (MAX_QUESTION_LENGTH + 1)
+        with pytest.raises(ValidationError, match="500 characters or fewer"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question=long_question,
+                option_texts=["A", "B"],
+            )
+
+    def test_too_few_options_raises_validation_error(self) -> None:
+        """Should raise ValidationError for fewer than 2 options."""
+        with pytest.raises(ValidationError, match="at least 2 options"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="Q?",
+                option_texts=["Only one"],
+            )
+
+    def test_too_many_options_raises_validation_error(self) -> None:
+        """Should raise ValidationError for more than 10 options."""
+        options = [f"Option {i}" for i in range(11)]
+        with pytest.raises(ValidationError, match="at most 10 options"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="Q?",
+                option_texts=options,
+            )
+
+    def test_empty_option_text_raises_validation_error(self) -> None:
+        """Should raise ValidationError for empty option text."""
+        with pytest.raises(ValidationError, match="Option 2 text cannot be empty"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="Q?",
+                option_texts=["Valid", ""],
+            )
+
+    def test_whitespace_only_option_raises_validation_error(self) -> None:
+        """Should raise ValidationError for whitespace-only option."""
+        with pytest.raises(ValidationError, match="Option 1 text cannot be empty"):
+            Poll.create(
+                event_id=uuid.uuid4(),
+                question="Q?",
+                option_texts=["   ", "Valid"],
+            )
+
+
+class TestPollActivateDeactivate:
+    """Tests for Poll.activate and Poll.deactivate methods."""
+
+    def test_activate_returns_new_poll_with_is_active_true(self) -> None:
+        """Should return a new Poll with is_active=True."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="Q?",
+            option_texts=["A", "B"],
+        )
+        activated = poll.activate()
+
+        assert activated.is_active is True
+        assert poll.is_active is False  # original unchanged
+
+    def test_deactivate_returns_new_poll_with_is_active_false(self) -> None:
+        """Should return a new Poll with is_active=False."""
+        poll = Poll.create(
+            event_id=uuid.uuid4(),
+            question="Q?",
+            option_texts=["A", "B"],
+        )
+        activated = poll.activate()
+        deactivated = activated.deactivate()
+
+        assert deactivated.is_active is False
+        assert activated.is_active is True  # original unchanged
 
 
 class TestPollDirectConstruction:
@@ -122,8 +246,9 @@ class TestPollDirectConstruction:
         """Should allow direct construction without validation."""
         poll_id = uuid.uuid4()
         event_id = uuid.uuid4()
+        opt_id = uuid.uuid4()
         created_at = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
-        options = [{"id": "x", "text": "Option X"}]
+        options = [PollOption(id=opt_id, text="Option X")]
 
         poll = Poll(
             id=poll_id,
