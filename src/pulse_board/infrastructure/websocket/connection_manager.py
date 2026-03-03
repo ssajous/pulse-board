@@ -445,9 +445,7 @@ class ConnectionManager(EventPublisher, ParticipantCounter):
         """Broadcast a poll activation to a specific channel."""
         await self.broadcast_to_channel(
             channel,
-            self._poll_activated_message(
-                poll_id, question, poll_type, options
-            ),
+            self._poll_activated_message(poll_id, question, poll_type, options),
         )
 
     async def publish_poll_deactivated_to_channel(
