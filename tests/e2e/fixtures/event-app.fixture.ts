@@ -30,6 +30,11 @@ async function waitForEventPageReady(
   await page.goto(`/events/${code}`);
   await page.locator("#topic-list").waitFor({ state: "visible" });
   await wsConnected;
+  // Wait for initial fetchTopics() to complete so no in-flight fetch can
+  // race against WebSocket messages once the test body starts.
+  await expect(page.locator("#topic-list")).toContainText("No topics yet", {
+    timeout: 10_000,
+  });
 }
 
 export const test = base.extend<EventAppFixtures>({

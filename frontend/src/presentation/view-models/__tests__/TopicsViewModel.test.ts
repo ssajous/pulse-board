@@ -340,7 +340,7 @@ describe("TopicsViewModel", () => {
   });
 
   describe("handleReconnect (via WebSocket)", () => {
-    it("triggers a full refresh of topics", async () => {
+    it("merges refreshed topics with existing ones on reconnect", async () => {
       const api = createMockApi([makeTopic({ id: "t1" })]);
       const { ws, reconnectHandler } = createMockWs();
 
@@ -353,8 +353,11 @@ describe("TopicsViewModel", () => {
       await flushMicrotasks();
 
       expect(api.fetchTopics).toHaveBeenCalledTimes(1);
+      expect(vm.topics).toHaveLength(1);
 
-      // Return different data on the second fetch
+      // Return a new topic on the second fetch (simulates a topic added
+      // while disconnected). fetchTopics now merges rather than replaces,
+      // so the existing t1 is preserved alongside the new t2.
       (
         api.fetchTopics as ReturnType<typeof vi.fn>
       ).mockResolvedValue([
@@ -365,8 +368,9 @@ describe("TopicsViewModel", () => {
       await flushMicrotasks();
 
       expect(api.fetchTopics).toHaveBeenCalledTimes(2);
-      expect(vm.topics).toHaveLength(1);
-      expect(vm.topics[0].id).toBe("t2");
+      expect(vm.topics).toHaveLength(2);
+      expect(vm.topics.some((t) => t.id === "t1")).toBe(true);
+      expect(vm.topics.some((t) => t.id === "t2")).toBe(true);
     });
   });
 

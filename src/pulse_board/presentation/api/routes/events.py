@@ -4,7 +4,7 @@ import asyncio
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from pulse_board.application.use_cases.check_event_creator import (
     CheckEventCreatorUseCase,
@@ -18,12 +18,14 @@ from pulse_board.application.use_cases.create_topic import (
 from pulse_board.application.use_cases.get_event import (
     GetEventUseCase,
 )
+from pulse_board.application.use_cases.get_present_state import GetPresentStateUseCase
 from pulse_board.application.use_cases.join_event import (
     JoinEventUseCase,
 )
 from pulse_board.application.use_cases.list_event_topics import (
     ListEventTopicsUseCase,
 )
+from pulse_board.domain.exceptions import EventNotFoundError
 from pulse_board.domain.ports.event_publisher_port import (
     EventPublisher,
 )
@@ -33,6 +35,7 @@ from pulse_board.presentation.api.dependencies import (
     get_create_topic_use_case,
     get_event_publisher,
     get_get_event_use_case,
+    get_get_present_state_use_case,
     get_join_event_use_case,
     get_list_event_topics_use_case,
 )
@@ -40,6 +43,12 @@ from pulse_board.presentation.api.schemas.events import (
     CheckCreatorResponse,
     CreateEventRequest,
     EventResponse,
+)
+from pulse_board.presentation.api.schemas.present_state import (
+    PresentActivePollSchema,
+    PresentPollOptionSchema,
+    PresentStateResponse,
+    PresentTopicSchema,
 )
 from pulse_board.presentation.api.schemas.topics import (
     CreateTopicRequest,
@@ -154,6 +163,64 @@ async def check_event_creator(
         creator_token,
     )
     return CheckCreatorResponse(is_creator=result.is_creator)
+
+
+@router.get(
+    "/{event_id}/present-state",
+    response_model=PresentStateResponse,
+    summary="Get present mode state",
+    description=(
+        "Returns the projection-ready state for an event: "
+        "active poll results, top 10 topics by score, and live participant count."
+    ),
+    responses={
+        200: {"description": "Present state returned"},
+        404: {"description": "Event not found"},
+    },
+)
+async def get_present_state(
+    event_id: uuid.UUID,
+    use_case: GetPresentStateUseCase = Depends(get_get_present_state_use_case),
+) -> PresentStateResponse:
+    """Get the present mode state for an event."""
+    try:
+        result = await asyncio.to_thread(use_case.execute, event_id)
+    except EventNotFoundError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+
+    active_poll_schema: PresentActivePollSchema | None = None
+    if result.active_poll is not None:
+        active_poll_schema = PresentActivePollSchema(
+            poll_id=result.active_poll.poll_id,
+            question=result.active_poll.question,
+            total_votes=result.active_poll.total_votes,
+            options=[
+                PresentPollOptionSchema(
+                    option_id=opt.option_id,
+                    text=opt.text,
+                    count=opt.count,
+                    percentage=opt.percentage,
+                )
+                for opt in result.active_poll.options
+            ],
+        )
+
+    return PresentStateResponse(
+        event_id=result.event_id,
+        event_title=result.event_title,
+        event_code=result.event_code,
+        active_poll=active_poll_schema,
+        top_topics=[
+            PresentTopicSchema(
+                id=t.id,
+                content=t.content,
+                score=t.score,
+                created_at=t.created_at,
+            )
+            for t in result.top_topics
+        ],
+        participant_count=result.participant_count,
+    )
 
 
 @router.get(

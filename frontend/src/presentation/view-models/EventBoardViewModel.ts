@@ -5,15 +5,9 @@ import { EventTopicApiClient } from "@infrastructure/api/eventTopicApiClient";
 import { VoteApiClient } from "@infrastructure/api/voteApiClient";
 import { PollApiClient } from "@infrastructure/api/pollApiClient";
 import { FingerprintService } from "@infrastructure/fingerprint/fingerprintService";
-import { WebSocketClient } from "@infrastructure/websocket";
+import { WebSocketClient, buildWebSocketUrl } from "@infrastructure/websocket";
 import { TopicsViewModel } from "./TopicsViewModel";
 import { PollParticipationViewModel } from "./PollParticipationViewModel";
-
-function buildEventWebSocketUrl(code: string): string {
-  const protocol =
-    window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws/events/${code}`;
-}
 
 export class EventBoardViewModel {
   event: Event | null = null;
@@ -57,7 +51,7 @@ export class EventBoardViewModel {
             fingerprintSvc,
           );
         this._wsClient.connect(
-          buildEventWebSocketUrl(event.code),
+          buildWebSocketUrl(`events/${event.code}`),
         );
         this.pollParticipationViewModel.loadActivePoll(event.id);
         this.isLoading = false;

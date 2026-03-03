@@ -13,6 +13,7 @@ from pulse_board.domain.entities.topic import Topic
 from pulse_board.domain.entities.vote import Vote
 from pulse_board.domain.ports.event_publisher_port import EventPublisher
 from pulse_board.domain.ports.event_repository_port import EventRepository
+from pulse_board.domain.ports.participant_counter_port import ParticipantCounter
 from pulse_board.domain.ports.poll_repository_port import PollRepository
 from pulse_board.domain.ports.poll_response_repository_port import (
     PollResponseRepository,
@@ -343,3 +344,18 @@ class FakeEventPublisher(EventPublisher):
                 "results": results,
             }
         )
+
+
+class FakeParticipantCounter(ParticipantCounter):
+    """In-memory participant counter for unit tests."""
+
+    def __init__(self) -> None:
+        self._counts: dict[str, int] = {}
+
+    def set_count(self, channel: str, count: int) -> None:
+        """Configure the count for a given channel."""
+        self._counts[channel] = count
+
+    def get_channel_count(self, channel: str) -> int:
+        """Return the configured count, defaulting to 0."""
+        return self._counts.get(channel, 0)

@@ -10,12 +10,7 @@ import {
   isRecord,
   extractErrorMessage,
 } from "@infrastructure/utils/typeGuards";
-
-function buildWebSocketUrl(): string {
-  const protocol =
-    window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws`;
-}
+import { buildWebSocketUrl } from "@infrastructure/websocket/buildWebSocketUrl";
 
 interface ScoreUpdateMessage {
   type: "score_update";
@@ -243,7 +238,9 @@ export class TopicsViewModel {
     try {
       const topics = await this._api.fetchTopics();
       runInAction(() => {
-        this.topics = topics;
+        const existingIds = new Set(this.topics.map((t) => t.id));
+        const missing = topics.filter((t) => !existingIds.has(t.id));
+        this.topics = [...this.topics, ...missing];
         this.isLoading = false;
       });
     } catch (e) {
