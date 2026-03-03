@@ -9,4 +9,5 @@ export interface Event {
   readonly end_date: string | null;
   readonly status: EventStatus;
   readonly created_at: string;
+  readonly creator_token?: string | null;
 }

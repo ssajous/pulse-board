@@ -34,6 +34,8 @@ class Event:
     end_date: datetime | None
     status: EventStatus
     created_at: datetime
+    creator_fingerprint: str | None
+    creator_token: str | None
 
     @classmethod
     def create(
@@ -44,6 +46,7 @@ class Event:
         description: str | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        creator_fingerprint: str | None = None,
     ) -> "Event":
         """Create a new Event with validated fields.
 
@@ -53,10 +56,12 @@ class Event:
             description: Optional event description.
             start_date: Optional scheduled start time.
             end_date: Optional scheduled end time.
+            creator_fingerprint: Optional browser fingerprint
+                of the event creator for vote deduplication.
 
         Returns:
-            A new Event instance with a generated id and
-            timestamp.
+            A new Event instance with a generated id, timestamp,
+            and server-issued creator token.
 
         Raises:
             ValidationError: If the title is empty or exceeds
@@ -76,6 +81,8 @@ class Event:
             end_date=end_date,
             status=EventStatus.ACTIVE,
             created_at=datetime.now(UTC),
+            creator_fingerprint=creator_fingerprint,
+            creator_token=str(uuid.uuid4()),
         )
 
     @staticmethod

@@ -26,6 +26,11 @@ class CreateEventRequest(BaseModel):
         default=None,
         description="Optional scheduled end date",
     )
+    creator_fingerprint: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Browser fingerprint of the event creator",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -68,6 +73,13 @@ class EventResponse(BaseModel):
     created_at: datetime = Field(
         description="Event creation timestamp",
     )
+    creator_token: str | None = Field(
+        default=None,
+        description=(
+            "Server-issued token identifying the event creator. "
+            "Only returned on event creation."
+        ),
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -85,6 +97,14 @@ class EventResponse(BaseModel):
             ]
         }
     }
+
+
+class CheckCreatorResponse(BaseModel):
+    """Response for the check-creator endpoint."""
+
+    is_creator: bool = Field(
+        description="Whether the provided token matches the event creator.",
+    )
 
 
 class EventListResponse(BaseModel):

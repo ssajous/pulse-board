@@ -19,6 +19,7 @@ export class EventBoardViewModel {
   event: Event | null = null;
   isLoading = true;
   error: string | null = null;
+  isCreator: boolean = false;
   topicsViewModel: TopicsViewModel | null = null;
   pollParticipationViewModel: PollParticipationViewModel | null =
     null;
@@ -35,6 +36,9 @@ export class EventBoardViewModel {
     this.dispose();
     this.isLoading = true;
     this.error = null;
+
+    const fingerprintSvc = new FingerprintService();
+
     try {
       const event = await this._api.getEventByCode(code);
       runInAction(() => {
@@ -43,14 +47,14 @@ export class EventBoardViewModel {
         this.topicsViewModel = new TopicsViewModel(
           new EventTopicApiClient(event.id),
           new VoteApiClient(),
-          new FingerprintService(),
+          fingerprintSvc,
           this._wsClient,
         );
         this.pollParticipationViewModel =
           new PollParticipationViewModel(
             new PollApiClient(),
             this._wsClient,
-            new FingerprintService(),
+            fingerprintSvc,
           );
         this._wsClient.connect(
           buildEventWebSocketUrl(event.code),
@@ -58,6 +62,21 @@ export class EventBoardViewModel {
         this.pollParticipationViewModel.loadActivePoll(event.id);
         this.isLoading = false;
       });
+
+      const creatorToken = localStorage.getItem(`creator_token:${code}`);
+      if (creatorToken) {
+        try {
+          const result = await this._api.checkCreator(
+            event.id,
+            creatorToken,
+          );
+          runInAction(() => {
+            this.isCreator = result.is_creator;
+          });
+        } catch {
+          // Creator check failure is non-critical; isCreator stays false
+        }
+      }
     } catch (e) {
       runInAction(() => {
         this.error =
@@ -73,5 +92,6 @@ export class EventBoardViewModel {
     this.pollParticipationViewModel?.dispose();
     this.pollParticipationViewModel = null;
     this._wsClient = null;
+    this.isCreator = false;
   }
 }

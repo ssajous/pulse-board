@@ -34,3 +34,5 @@ class EventModel(Base):
         nullable=False,
         server_default=func.now(),
     )
+    creator_fingerprint: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    creator_token: Mapped[str | None] = mapped_column(String(36), nullable=True)

@@ -103,6 +103,8 @@ class SQLAlchemyEventRepository(EventRepository):
             end_date=entity.end_date,
             status=entity.status.value,
             created_at=entity.created_at,
+            creator_fingerprint=entity.creator_fingerprint,
+            creator_token=entity.creator_token,
         )
 
     @staticmethod
@@ -116,4 +118,6 @@ class SQLAlchemyEventRepository(EventRepository):
             end_date=model.end_date,
             status=EventStatus(model.status),
             created_at=model.created_at,
+            creator_fingerprint=model.creator_fingerprint,
+            creator_token=model.creator_token,
         )

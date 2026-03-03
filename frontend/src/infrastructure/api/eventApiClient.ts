@@ -1,5 +1,6 @@
 import type { Event } from "@domain/entities/Event";
 import type {
+  CheckCreatorResponse,
   CreateEventRequest,
   EventApiPort,
 } from "@domain/ports/EventApiPort";
@@ -52,6 +53,22 @@ export class EventApiClient implements EventApiPort {
 
     if (!response.ok) {
       throw new Error("Failed to fetch event");
+    }
+
+    return response.json();
+  }
+
+  async checkCreator(
+    eventId: string,
+    creatorToken: string,
+  ): Promise<CheckCreatorResponse> {
+    const params = new URLSearchParams({ creator_token: creatorToken });
+    const response = await fetch(
+      `/api/events/${eventId}/check-creator?${params.toString()}`,
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to check creator status");
     }
 
     return response.json();
