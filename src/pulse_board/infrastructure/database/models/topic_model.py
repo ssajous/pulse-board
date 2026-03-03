@@ -26,3 +26,6 @@ class TopicModel(Base):
         ForeignKey("events.id", ondelete="SET NULL"),
         nullable=True,
     )
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="active"
+    )

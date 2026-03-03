@@ -2,10 +2,10 @@
 
 import uuid
 
-from sqlalchemy import update
+from sqlalchemy import func, update
 from sqlalchemy.orm import Session, sessionmaker
 
-from pulse_board.domain.entities.topic import Topic
+from pulse_board.domain.entities.topic import Topic, TopicStatus
 from pulse_board.domain.ports.topic_repository_port import (
     TopicRepository,
 )
@@ -48,15 +48,24 @@ class SQLAlchemyTopicRepository(TopicRepository):
             return [self._to_entity(m) for m in models]
 
     def list_by_event(self, event_id: uuid.UUID) -> list[Topic]:
-        """Return topics for a specific event above threshold."""
+        """Return non-archived topics for a specific event above threshold."""
         with self._session_factory() as session:
             models = (
                 session.query(TopicModel)
                 .filter(
                     TopicModel.event_id == event_id,
                     TopicModel.score > CENSURE_THRESHOLD,
+                    TopicModel.status != TopicStatus.ARCHIVED.value,
                 )
                 .all()
+            )
+            return [self._to_entity(m) for m in models]
+
+    def list_all_by_event(self, event_id: uuid.UUID) -> list[Topic]:
+        """Return all topics for a specific event regardless of status."""
+        with self._session_factory() as session:
+            models = (
+                session.query(TopicModel).filter(TopicModel.event_id == event_id).all()
             )
             return [self._to_entity(m) for m in models]
 
@@ -92,6 +101,47 @@ class SQLAlchemyTopicRepository(TopicRepository):
             model = session.get(TopicModel, id)
             return self._to_entity(model) if model else None
 
+    def update_status(self, id: uuid.UUID, status: TopicStatus) -> Topic | None:
+        """Update the lifecycle status of a topic."""
+        with self._session_factory() as session:
+            result = session.execute(
+                update(TopicModel)
+                .where(TopicModel.id == id)
+                .values(status=status.value)
+            )
+            session.commit()
+            if result.rowcount == 0:  # type: ignore[union-attr]
+                return None
+            model = session.get(TopicModel, id)
+            return self._to_entity(model) if model else None
+
+    def count_by_event(self, event_id: uuid.UUID) -> int:
+        """Count all topics belonging to a specific event."""
+        with self._session_factory() as session:
+            count: int = (
+                session.query(func.count(TopicModel.id))
+                .filter(TopicModel.event_id == event_id)
+                .scalar()
+                or 0
+            )
+            return count
+
+    def count_by_event_and_status(
+        self, event_id: uuid.UUID, status: TopicStatus
+    ) -> int:
+        """Count topics for an event filtered by status."""
+        with self._session_factory() as session:
+            count: int = (
+                session.query(func.count(TopicModel.id))
+                .filter(
+                    TopicModel.event_id == event_id,
+                    TopicModel.status == status.value,
+                )
+                .scalar()
+                or 0
+            )
+            return count
+
     @staticmethod
     def _to_model(entity: Topic) -> TopicModel:
         return TopicModel(
@@ -100,6 +150,7 @@ class SQLAlchemyTopicRepository(TopicRepository):
             score=entity.score,
             created_at=entity.created_at,
             event_id=entity.event_id,
+            status=entity.status.value,
         )
 
     @staticmethod
@@ -110,4 +161,5 @@ class SQLAlchemyTopicRepository(TopicRepository):
             score=model.score,
             created_at=model.created_at,
             event_id=model.event_id,
+            status=TopicStatus(model.status),
         )

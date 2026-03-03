@@ -1,5 +1,6 @@
 """Topic entity — core business object for the Pulse Board."""
 
+import enum
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -7,6 +8,15 @@ from datetime import UTC, datetime
 from pulse_board.domain.exceptions import ValidationError
 
 MAX_CONTENT_LENGTH = 255
+
+
+class TopicStatus(enum.StrEnum):
+    """Lifecycle status of a discussion topic."""
+
+    ACTIVE = "active"
+    HIGHLIGHTED = "highlighted"
+    ANSWERED = "answered"
+    ARCHIVED = "archived"
 
 
 @dataclass
@@ -23,6 +33,7 @@ class Topic:
     score: int
     created_at: datetime
     event_id: uuid.UUID | None = None
+    status: TopicStatus = TopicStatus.ACTIVE
 
     @classmethod
     def create(
@@ -52,6 +63,7 @@ class Topic:
             score=0,
             created_at=datetime.now(UTC),
             event_id=event_id,
+            status=TopicStatus.ACTIVE,
         )
 
     @staticmethod

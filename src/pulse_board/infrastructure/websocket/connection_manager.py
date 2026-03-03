@@ -339,6 +339,57 @@ class ConnectionManager(EventPublisher, ParticipantCounter):
         )
 
     # ------------------------------------------------------------------
+    # Host/admin message builders
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _topic_status_changed_message(
+        topic_id: uuid.UUID,
+        new_status: str,
+    ) -> dict[str, Any]:
+        return {
+            "type": "topic_status_changed",
+            "topic_id": str(topic_id),
+            "new_status": new_status,
+        }
+
+    @staticmethod
+    def _event_closed_message(
+        event_id: uuid.UUID,
+    ) -> dict[str, Any]:
+        return {
+            "type": "event_closed",
+            "event_id": str(event_id),
+        }
+
+    # ------------------------------------------------------------------
+    # Host/admin channel publish methods
+    # ------------------------------------------------------------------
+
+    async def publish_topic_status_changed_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        new_status: str,
+    ) -> None:
+        """Broadcast a topic status change to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            self._topic_status_changed_message(topic_id, new_status),
+        )
+
+    async def publish_event_closed_to_channel(
+        self,
+        channel: str,
+        event_id: uuid.UUID,
+    ) -> None:
+        """Broadcast event closure to a specific channel."""
+        await self.broadcast_to_channel(
+            channel,
+            self._event_closed_message(event_id),
+        )
+
+    # ------------------------------------------------------------------
     # Poll message builders
     # ------------------------------------------------------------------
 

@@ -3,7 +3,7 @@
 import uuid
 from abc import ABC, abstractmethod
 
-from pulse_board.domain.entities.topic import Topic
+from pulse_board.domain.entities.topic import Topic, TopicStatus
 
 
 class TopicRepository(ABC):
@@ -57,14 +57,15 @@ class TopicRepository(ABC):
 
     @abstractmethod
     def list_by_event(self, event_id: uuid.UUID) -> list[Topic]:
-        """Return active topics belonging to a specific event.
+        """Return non-archived topics belonging to a specific event.
 
         Args:
             event_id: The UUID of the parent event.
 
         Returns:
             A list of Topic entities for the given event
-            whose score is above the censure threshold.
+            whose score is above the censure threshold and are
+            not archived.
         """
         ...
 
@@ -78,5 +79,57 @@ class TopicRepository(ABC):
 
         Returns:
             The updated Topic, or None if not found.
+        """
+        ...
+
+    @abstractmethod
+    def update_status(self, id: uuid.UUID, status: TopicStatus) -> Topic | None:
+        """Update the lifecycle status of a topic.
+
+        Args:
+            id: The UUID of the topic to update.
+            status: The new TopicStatus value.
+
+        Returns:
+            The updated Topic, or None if not found.
+        """
+        ...
+
+    @abstractmethod
+    def count_by_event(self, event_id: uuid.UUID) -> int:
+        """Count all topics belonging to a specific event.
+
+        Args:
+            event_id: The UUID of the parent event.
+
+        Returns:
+            Total number of topics for the event.
+        """
+        ...
+
+    @abstractmethod
+    def count_by_event_and_status(
+        self, event_id: uuid.UUID, status: TopicStatus
+    ) -> int:
+        """Count topics for an event filtered by status.
+
+        Args:
+            event_id: The UUID of the parent event.
+            status: The TopicStatus to filter by.
+
+        Returns:
+            Number of topics matching the event and status.
+        """
+        ...
+
+    @abstractmethod
+    def list_all_by_event(self, event_id: uuid.UUID) -> list[Topic]:
+        """Return all topics for an event regardless of status.
+
+        Args:
+            event_id: The UUID of the parent event.
+
+        Returns:
+            A list of all Topic entities for the given event.
         """
         ...

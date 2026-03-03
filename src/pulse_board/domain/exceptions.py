@@ -43,3 +43,11 @@ class PollNotActiveError(DomainError):
 
 class InvalidPollOptionError(DomainError):
     """Raised when a submitted option does not belong to the poll."""
+
+
+class TopicNotFoundError(DomainError):
+    """Raised when a requested topic does not exist."""
+
+
+class CreatorTokenInvalidError(DomainError):
+    """Raised when a creator token is invalid."""

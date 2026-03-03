@@ -101,3 +101,22 @@ class EventPublisher(ABC):
     ) -> None:
         """Broadcast updated poll results to a specific channel."""
         ...
+
+    @abstractmethod
+    async def publish_topic_status_changed_to_channel(
+        self,
+        channel: str,
+        topic_id: uuid.UUID,
+        new_status: str,
+    ) -> None:
+        """Broadcast a topic status change to a specific channel."""
+        ...
+
+    @abstractmethod
+    async def publish_event_closed_to_channel(
+        self,
+        channel: str,
+        event_id: uuid.UUID,
+    ) -> None:
+        """Broadcast event closure to a specific channel."""
+        ...

@@ -95,3 +95,22 @@ class PollResponseReceivedEvent(DomainEvent):
         default_factory=uuid.uuid4,
     )
     fingerprint_id: str = ""
+
+
+@dataclass(frozen=True)
+class TopicStatusChangedEvent(DomainEvent):
+    """Raised when a topic's status is changed by the host.
+
+    Attributes:
+        topic_id: The unique identifier of the topic.
+        new_status: The status the topic transitioned to.
+        event_id: A unique identifier for this event occurrence.
+    """
+
+    topic_id: uuid.UUID = field(
+        default_factory=uuid.uuid4,
+    )
+    new_status: str = ""
+    event_id: uuid.UUID = field(
+        default_factory=uuid.uuid4,
+    )
