@@ -397,12 +397,14 @@ class ConnectionManager(EventPublisher, ParticipantCounter):
     def _poll_activated_message(
         poll_id: uuid.UUID,
         question: str,
+        poll_type: str,
         options: list[dict[str, str]],
     ) -> dict[str, Any]:
         return {
             "type": "poll_activated",
             "poll_id": str(poll_id),
             "question": question,
+            "poll_type": poll_type,
             "options": options,
         }
 
@@ -437,12 +439,15 @@ class ConnectionManager(EventPublisher, ParticipantCounter):
         channel: str,
         poll_id: uuid.UUID,
         question: str,
+        poll_type: str,
         options: list[dict[str, str]],
     ) -> None:
         """Broadcast a poll activation to a specific channel."""
         await self.broadcast_to_channel(
             channel,
-            self._poll_activated_message(poll_id, question, options),
+            self._poll_activated_message(
+                poll_id, question, poll_type, options
+            ),
         )
 
     async def publish_poll_deactivated_to_channel(

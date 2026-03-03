@@ -373,6 +373,7 @@ class FakeEventPublisher(EventPublisher):
         channel: str,
         poll_id: uuid.UUID,
         question: str,
+        poll_type: str,
         options: list[dict[str, str]],
     ) -> None:
         self.channel_poll_activated.append(
@@ -380,6 +381,7 @@ class FakeEventPublisher(EventPublisher):
                 "channel": channel,
                 "poll_id": poll_id,
                 "question": question,
+                "poll_type": poll_type,
                 "options": options,
             }
         )

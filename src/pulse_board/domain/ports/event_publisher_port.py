@@ -77,6 +77,7 @@ class EventPublisher(ABC):
         channel: str,
         poll_id: uuid.UUID,
         question: str,
+        poll_type: str,
         options: list[dict[str, str]],
     ) -> None:
         """Broadcast a poll activation to a specific channel."""

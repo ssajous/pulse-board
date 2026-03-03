@@ -5,6 +5,7 @@ interface EventInfo {
   id: string;
   title: string;
   code: string;
+  creatorToken: string;
 }
 
 type EventAppFixtures = {
@@ -44,11 +45,20 @@ export const test = base.extend<EventAppFixtures>({
       id: response.id,
       title: response.title,
       code: response.code,
+      creatorToken: response.creator_token ?? "",
     });
   },
 
-  contextA: async ({ browser }, use) => {
+  contextA: async ({ browser, event }, use) => {
     const context = await browser.newContext();
+    const token = event.creatorToken;
+    const code = event.code;
+    await context.addInitScript(
+      ({ token, code }) => {
+        localStorage.setItem(`creator_token:${code}`, token);
+      },
+      { token, code },
+    );
     await use(context);
     await context.close();
   },
