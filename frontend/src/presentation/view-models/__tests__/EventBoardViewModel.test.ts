@@ -54,6 +54,7 @@ vi.mock("@infrastructure/websocket", () => ({
       onReconnect: vi.fn(),
     };
   }),
+  buildWebSocketUrl: vi.fn().mockReturnValue("ws://localhost:8000/ws/test"),
 }));
 
 vi.mock("@infrastructure/logger", () => ({
