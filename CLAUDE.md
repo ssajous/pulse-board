@@ -8,9 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Use python-expert agent to implement python code
 3. Use the frontend-developer agent when designing and building frontend code
 4. Use mvvm-mobx-specialist agent for state management and setting up MVVM architecture on the frontend
-5. Use quality-engineer agent to plan and write unit, integration, and end-to-end tests
-6. Use the security-review skill to ensure proper security best practices on the current work branch
-7. Use /simplify command to clean up code before final completion
+5. Use test-architect agent to plan unit, integration, and end-to-end test cases
+6. Use test-implementer agent to write unit, integration, and end-to-end tests
+7. Use the security-review skill to ensure proper security best practices on the current work branch
+8. Use /simplify command to clean up code before final completion
 
 
 When switching from plan mode to implementation mode, use the correct agents for implementation.
