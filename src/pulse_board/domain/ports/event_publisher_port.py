@@ -96,7 +96,8 @@ class EventPublisher(ABC):
         self,
         channel: str,
         poll_id: uuid.UUID,
-        results: list[dict[str, object]],
+        poll_type: str,
+        results: dict[str, object],
     ) -> None:
         """Broadcast updated poll results to a specific channel."""
         ...

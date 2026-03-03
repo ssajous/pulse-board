@@ -1,8 +1,13 @@
-import type { Poll, PollResults, PollSubmitResponse } from "@domain/entities/Poll";
+import type {
+  Poll,
+  AnyPollResults,
+  PollSubmitResponse,
+} from "@domain/entities/Poll";
 
 export interface CreatePollRequest {
   readonly question: string;
-  readonly options: string[];
+  readonly options?: string[];
+  readonly poll_type?: string;
 }
 
 export interface PollApiPort {
@@ -13,7 +18,12 @@ export interface PollApiPort {
   submitResponse(
     pollId: string,
     fingerprintId: string,
-    optionId: string,
+    optionId: string | null,
+    responseValue?: number | string | null,
   ): Promise<PollSubmitResponse>;
-  getResults(pollId: string): Promise<PollResults>;
+  getResults(
+    pollId: string,
+    page?: number,
+    pageSize?: number,
+  ): Promise<AnyPollResults>;
 }

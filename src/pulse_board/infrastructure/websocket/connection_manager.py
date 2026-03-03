@@ -367,11 +367,13 @@ class ConnectionManager(EventPublisher, ParticipantCounter):
     @staticmethod
     def _poll_results_updated_message(
         poll_id: uuid.UUID,
-        results: list[dict[str, object]],
+        poll_type: str,
+        results: dict[str, object],
     ) -> dict[str, Any]:
         return {
             "type": "poll_results_updated",
             "poll_id": str(poll_id),
+            "poll_type": poll_type,
             "results": results,
         }
 
@@ -407,10 +409,11 @@ class ConnectionManager(EventPublisher, ParticipantCounter):
         self,
         channel: str,
         poll_id: uuid.UUID,
-        results: list[dict[str, object]],
+        poll_type: str,
+        results: dict[str, object],
     ) -> None:
         """Broadcast updated poll results to a specific channel."""
         await self.broadcast_to_channel(
             channel,
-            self._poll_results_updated_message(poll_id, results),
+            self._poll_results_updated_message(poll_id, poll_type, results),
         )

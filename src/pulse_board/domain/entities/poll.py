@@ -10,6 +10,8 @@ MAX_QUESTION_LENGTH = 500
 MIN_OPTIONS = 2
 MAX_OPTIONS = 10
 DEFAULT_POLL_TYPE = "multiple_choice"
+VALID_POLL_TYPES = {"multiple_choice", "rating", "open_text"}
+RATING_OPTIONS = ["1", "2", "3", "4", "5"]
 
 
 @dataclass
@@ -60,9 +62,11 @@ class Poll:
         Args:
             event_id: The UUID of the parent event.
             question: The poll question text (1-500 chars).
-            option_texts: List of option display texts (2-10).
-            poll_type: The type of poll. Defaults to
-                ``multiple_choice``.
+            option_texts: List of option display texts (2-10 for
+                multiple_choice; ignored for rating and open_text).
+            poll_type: The type of poll. Must be one of
+                ``multiple_choice``, ``rating``, or ``open_text``.
+                Defaults to ``multiple_choice``.
 
         Returns:
             A new Poll instance with generated id, option UUIDs,
@@ -70,14 +74,23 @@ class Poll:
 
         Raises:
             ValidationError: If question or options fail domain
-                validation rules.
+                validation rules, or poll_type is unknown.
         """
+        cls._validate_poll_type(poll_type)
+
         cleaned_question = question.strip()
         cls._validate_question(cleaned_question)
-        cls._validate_options(option_texts)
+
+        if poll_type == "rating":
+            effective_texts = RATING_OPTIONS
+        elif poll_type == "open_text":
+            effective_texts = []
+        else:
+            cls._validate_options(option_texts)
+            effective_texts = option_texts
 
         options = [
-            PollOption(id=uuid.uuid4(), text=text.strip()) for text in option_texts
+            PollOption(id=uuid.uuid4(), text=text.strip()) for text in effective_texts
         ]
 
         return cls(
@@ -97,6 +110,22 @@ class Poll:
     def deactivate(self) -> "Poll":
         """Return a new Poll with ``is_active`` set to False."""
         return replace(self, is_active=False)
+
+    @staticmethod
+    def _validate_poll_type(poll_type: str) -> None:
+        """Validate poll type against allowed values.
+
+        Args:
+            poll_type: The poll type string to validate.
+
+        Raises:
+            ValidationError: If poll_type is not in VALID_POLL_TYPES.
+        """
+        if poll_type not in VALID_POLL_TYPES:
+            valid = ", ".join(sorted(VALID_POLL_TYPES))
+            raise ValidationError(
+                f"Unknown poll type '{poll_type}'. Must be one of: {valid}"
+            )
 
     @staticmethod
     def _validate_question(question: str) -> None:

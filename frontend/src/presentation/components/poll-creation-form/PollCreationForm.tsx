@@ -2,6 +2,7 @@ import type React from "react";
 import { observer } from "mobx-react-lite";
 import { BarChart3 } from "lucide-react";
 import { usePollCreationViewModel } from "@presentation/view-models";
+import { PollCreationFormTypeSelector } from "./PollCreationFormTypeSelector";
 import { PollCreationFormQuestion } from "./PollCreationFormQuestion";
 import { PollCreationFormOptions } from "./PollCreationFormOptions";
 import { PollCreationFormSubmitButton } from "./PollCreationFormSubmitButton";
@@ -18,7 +19,9 @@ export const PollCreationForm = observer(
   }: PollCreationFormProps) {
     const vm = usePollCreationViewModel();
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (
+      e: React.FormEvent<HTMLFormElement>,
+    ) => {
       e.preventDefault();
       await vm.submit(eventId);
       if (vm.createdPoll) {
@@ -37,18 +40,24 @@ export const PollCreationForm = observer(
           Create a Poll
         </h3>
         <form onSubmit={handleSubmit}>
+          <PollCreationFormTypeSelector
+            selectedType={vm.pollType}
+            onChange={vm.setPollType}
+          />
           <PollCreationFormQuestion
             value={vm.question}
             onChange={vm.setQuestion}
           />
-          <PollCreationFormOptions
-            options={[...vm.options]}
-            onChange={vm.setOptionText}
-            onRemove={vm.removeOption}
-            onAdd={vm.addOption}
-            canAdd={vm.canAddOption}
-            canRemove={vm.canRemoveOption}
-          />
+          {vm.requiresOptions && (
+            <PollCreationFormOptions
+              options={[...vm.options]}
+              onChange={vm.setOptionText}
+              onRemove={vm.removeOption}
+              onAdd={vm.addOption}
+              canAdd={vm.canAddOption}
+              canRemove={vm.canRemoveOption}
+            />
+          )}
           {vm.error && (
             <p className="mb-3 text-sm text-red-400">{vm.error}</p>
           )}

@@ -34,7 +34,7 @@ export class PollResultsViewModel {
     try {
       const results = await this._api.getResults(pollId);
       runInAction(() => {
-        this.results = results;
+        this.results = results as PollResults;
         this.isLoading = false;
       });
     } catch (e) {

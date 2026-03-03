@@ -2,6 +2,8 @@ import { observer } from "mobx-react-lite";
 import { BarChart3 } from "lucide-react";
 import { usePollParticipationViewModel } from "@presentation/view-models";
 import { PollResults } from "@presentation/components/poll-results";
+import { RatingPollParticipation } from "@presentation/components/polls/rating-poll-participation";
+import { OpenTextPollParticipation } from "@presentation/components/polls/open-text-poll-participation";
 import { PollParticipationQuestion } from "./PollParticipationQuestion";
 import { PollParticipationOptionList } from "./PollParticipationOptionList";
 import { PollParticipationSubmitButton } from "./PollParticipationSubmitButton";
@@ -11,6 +13,23 @@ export const PollParticipation = observer(
     const vm = usePollParticipationViewModel();
 
     if (!vm.activePoll) return null;
+
+    const { activePoll } = vm;
+
+    if (activePoll.poll_type === "rating" && vm.ratingVm) {
+      return (
+        <RatingPollParticipation poll={activePoll} vm={vm.ratingVm} />
+      );
+    }
+
+    if (activePoll.poll_type === "open_text" && vm.openTextVm) {
+      return (
+        <OpenTextPollParticipation
+          poll={activePoll}
+          vm={vm.openTextVm}
+        />
+      );
+    }
 
     if (vm.showResults && vm.results) {
       return <PollResults results={vm.results} />;
@@ -26,10 +45,10 @@ export const PollParticipation = observer(
           Live Poll
         </div>
         <PollParticipationQuestion
-          question={vm.activePoll.question}
+          question={activePoll.question}
         />
         <PollParticipationOptionList
-          options={vm.activePoll.options}
+          options={activePoll.options}
           selectedOptionId={vm.selectedOptionId}
           isDisabled={vm.hasSubmitted}
           onSelect={vm.selectOption}

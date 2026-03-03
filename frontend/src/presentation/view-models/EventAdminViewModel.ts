@@ -89,7 +89,7 @@ export class EventAdminViewModel {
     try {
       const results = await this._pollApi.getResults(pollId);
       runInAction(() => {
-        this.pollResults.set(pollId, results);
+        this.pollResults.set(pollId, results as PollResults);
       });
     } catch {
       /* results may not exist yet */

@@ -13,10 +13,13 @@ class CreatePollRequest(BaseModel):
         max_length=500,
         description="The poll question text",
     )
+    poll_type: str = Field(
+        default="multiple_choice",
+        description="Type of poll: multiple_choice, rating, or open_text",
+    )
     options: list[str] = Field(
-        min_length=2,
-        max_length=10,
-        description="List of option texts (2-10 items)",
+        default=[],
+        description="List of option texts (2-10 items for multiple choice)",
     )
 
     model_config = {
@@ -24,6 +27,7 @@ class CreatePollRequest(BaseModel):
             "examples": [
                 {
                     "question": "What topic should we discuss?",
+                    "poll_type": "multiple_choice",
                     "options": [
                         "Architecture",
                         "Testing",
@@ -117,8 +121,15 @@ class SubmitPollResponseRequest(BaseModel):
         max_length=255,
         description="Browser fingerprint identifier",
     )
-    option_id: str = Field(
-        description="UUID of the selected option",
+    option_id: str | None = Field(
+        default=None,
+        description="UUID of the selected option (multiple_choice polls)",
+    )
+    response_value: int | str | None = Field(
+        default=None,
+        description=(
+            "Rating integer 1-5 (rating polls) or text string (open_text polls)"
+        ),
     )
 
     model_config = {
@@ -127,7 +138,15 @@ class SubmitPollResponseRequest(BaseModel):
                 {
                     "fingerprint_id": "fp_abc123def456",
                     "option_id": "a1b2c3d4-...",
-                }
+                },
+                {
+                    "fingerprint_id": "fp_abc123def456",
+                    "response_value": 4,
+                },
+                {
+                    "fingerprint_id": "fp_abc123def456",
+                    "response_value": "Great session!",
+                },
             ]
         }
     }
@@ -142,8 +161,8 @@ class SubmitPollResponseSchema(BaseModel):
     poll_id: str = Field(
         description="The poll that was responded to",
     )
-    option_id: str = Field(
-        description="The selected option",
+    option_id: str | None = Field(
+        description="The selected option (None for rating/open_text)",
     )
     created_at: datetime = Field(
         description="Response submission timestamp",
@@ -168,7 +187,7 @@ class PollOptionResultSchema(BaseModel):
 
 
 class PollResultsResponse(BaseModel):
-    """Aggregated poll results."""
+    """Aggregated multiple-choice poll results."""
 
     poll_id: str = Field(
         description="Unique poll identifier",
@@ -208,3 +227,63 @@ class PollResultsResponse(BaseModel):
             ]
         }
     }
+
+
+class RatingPollResultsResponse(BaseModel):
+    """Aggregated rating poll results."""
+
+    poll_id: str = Field(
+        description="Unique poll identifier",
+    )
+    question: str = Field(
+        description="The poll question text",
+    )
+    total_votes: int = Field(
+        description="Total number of rating responses",
+    )
+    average_rating: float | None = Field(
+        description="Average rating value, or null if no votes",
+    )
+    distribution: dict[str, int] = Field(
+        description='Rating distribution mapping ("1"-"5") to count',
+    )
+
+
+class OpenTextResponseSchema(BaseModel):
+    """A single open-text response in API output."""
+
+    id: str = Field(
+        description="Unique response identifier",
+    )
+    text: str = Field(
+        description="The submitted text content",
+    )
+    created_at: datetime = Field(
+        description="Response submission timestamp",
+    )
+
+
+class OpenTextPollResultsResponse(BaseModel):
+    """Paginated open-text poll results."""
+
+    poll_id: str = Field(
+        description="Unique poll identifier",
+    )
+    question: str = Field(
+        description="The poll question text",
+    )
+    total_responses: int = Field(
+        description="Total number of text responses",
+    )
+    responses: list[OpenTextResponseSchema] = Field(
+        description="Current page of responses (newest first)",
+    )
+    page: int = Field(
+        description="Current page number (1-based)",
+    )
+    page_size: int = Field(
+        description="Number of responses per page",
+    )
+    total_pages: int = Field(
+        description="Total number of pages",
+    )

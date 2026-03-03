@@ -93,3 +93,40 @@ class PollResponseRepository(ABC):
             A dict mapping option_id to vote count.
         """
         ...
+
+    @abstractmethod
+    def get_rating_aggregate(
+        self,
+        poll_id: uuid.UUID,
+    ) -> tuple[float | None, dict[str, int]]:
+        """Return aggregated rating data for a rating poll.
+
+        Args:
+            poll_id: The UUID of the poll.
+
+        Returns:
+            A tuple of (average_rating, distribution) where
+            average_rating is None when no responses exist and
+            distribution maps rating string ("1"-"5") to count.
+        """
+        ...
+
+    @abstractmethod
+    def list_open_text_by_poll(
+        self,
+        poll_id: uuid.UUID,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[PollResponse], int]:
+        """Return paginated open-text responses for a poll.
+
+        Args:
+            poll_id: The UUID of the poll.
+            page: 1-based page number.
+            page_size: Number of responses per page.
+
+        Returns:
+            A tuple of (responses, total_count) where responses are
+            ordered newest first.
+        """
+        ...

@@ -285,6 +285,7 @@ describe("PollCreationViewModel", () => {
       expect(api.createPoll).toHaveBeenCalledWith("event-1", {
         question: "What is your favorite color?",
         options: ["Red", "Blue"],
+        poll_type: "multiple_choice",
       });
       expect(vm.createdPoll).toEqual(expectedPoll);
       expect(vm.isSubmitting).toBe(false);

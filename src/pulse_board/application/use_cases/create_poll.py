@@ -51,13 +51,17 @@ class CreatePollUseCase:
         event_id: uuid.UUID,
         question: str,
         option_texts: list[str],
+        poll_type: str = "multiple_choice",
     ) -> CreatePollResult:
         """Create a new poll for an event.
 
         Args:
             event_id: The UUID of the parent event.
             question: The poll question text (1-500 chars).
-            option_texts: List of option display texts (2-10).
+            option_texts: List of option display texts (2-10 for
+                multiple_choice; ignored for rating and open_text).
+            poll_type: The type of poll. Defaults to
+                ``multiple_choice``.
 
         Returns:
             CreatePollResult with the created poll details.
@@ -75,6 +79,7 @@ class CreatePollUseCase:
             event_id=event_id,
             question=question,
             option_texts=option_texts,
+            poll_type=poll_type,
         )
         saved = self._poll_repo.create(poll)
 

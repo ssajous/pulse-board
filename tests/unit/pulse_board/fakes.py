@@ -221,9 +221,44 @@ class FakePollResponseRepository(PollResponseRepository):
         """Count responses grouped by option for a poll."""
         counter: Counter[uuid.UUID] = Counter()
         for response in self._responses.values():
-            if response.poll_id == poll_id:
+            if response.poll_id == poll_id and response.option_id is not None:
                 counter[response.option_id] += 1
         return dict(counter)
+
+    def get_rating_aggregate(
+        self,
+        poll_id: uuid.UUID,
+    ) -> tuple[float | None, dict[str, int]]:
+        """Return (average_rating, distribution) for a rating poll."""
+        distribution: dict[str, int] = {}
+        for response in self._responses.values():
+            if response.poll_id == poll_id and "rating" in response.response_data:
+                rating_val = str(response.response_data["rating"])
+                distribution[rating_val] = distribution.get(rating_val, 0) + 1
+        if not distribution:
+            return None, {}
+        total = sum(distribution.values())
+        total_rating = sum(int(r) * c for r, c in distribution.items())
+        avg = round(total_rating / total, 2) if total > 0 else None
+        return avg, distribution
+
+    def list_open_text_by_poll(
+        self,
+        poll_id: uuid.UUID,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[PollResponse], int]:
+        """Return paginated open-text responses, newest first."""
+        matching = [
+            r
+            for r in self._responses.values()
+            if r.poll_id == poll_id and "text" in r.response_data
+        ]
+        matching.sort(key=lambda r: r.created_at, reverse=True)
+        total = len(matching)
+        offset = (page - 1) * page_size
+        page_items = matching[offset : offset + page_size]
+        return page_items, total
 
 
 class FakeEventPublisher(EventPublisher):
@@ -335,12 +370,14 @@ class FakeEventPublisher(EventPublisher):
         self,
         channel: str,
         poll_id: uuid.UUID,
-        results: list[dict[str, object]],
+        poll_type: str,
+        results: dict[str, object],
     ) -> None:
         self.channel_poll_results_updated.append(
             {
                 "channel": channel,
                 "poll_id": poll_id,
+                "poll_type": poll_type,
                 "results": results,
             }
         )
