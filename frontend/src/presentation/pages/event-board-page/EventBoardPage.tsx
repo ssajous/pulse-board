@@ -42,7 +42,7 @@ const EventBoardContent = observer(function EventBoardContent({
 
   return (
     <TopicsViewModelProvider value={vm.topicsViewModel}>
-      <EventBoardHeader event={vm.event} />
+      <EventBoardHeader event={vm.event} isCreator={vm.isCreator} />
       {vm.pollParticipationViewModel && (
         <PollParticipationViewModelProvider
           value={vm.pollParticipationViewModel}
