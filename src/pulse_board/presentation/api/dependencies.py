@@ -26,6 +26,9 @@ from pulse_board.application.use_cases.get_event import (
 from pulse_board.application.use_cases.get_poll_results import (
     GetPollResultsUseCase,
 )
+from pulse_board.application.use_cases.get_present_state import (
+    GetPresentStateUseCase,
+)
 from pulse_board.application.use_cases.health_check import (
     HealthCheckUseCase,
 )
@@ -44,6 +47,7 @@ from pulse_board.application.use_cases.submit_poll_response import (
 from pulse_board.domain.ports.event_publisher_port import (
     EventPublisher,
 )
+from pulse_board.domain.ports.participant_counter_port import ParticipantCounter
 from pulse_board.domain.services.join_code_generator import (
     JoinCodeGenerator,
 )
@@ -208,4 +212,25 @@ def get_get_poll_results_use_case() -> GetPollResultsUseCase:
     return GetPollResultsUseCase(
         poll_repository=get_poll_repository(),
         poll_response_repository=_get_poll_response_repository(),
+    )
+
+
+# ------------------------------------------------------------------
+# Present state dependencies
+# ------------------------------------------------------------------
+
+
+def get_participant_counter(request: Request) -> ParticipantCounter:
+    """Provide the ParticipantCounter from app state."""
+    return request.app.state.connection_manager
+
+
+def get_get_present_state_use_case(request: Request) -> GetPresentStateUseCase:
+    """Provide a GetPresentStateUseCase instance."""
+    return GetPresentStateUseCase(
+        event_repository=_get_event_repository(),
+        poll_repository=get_poll_repository(),
+        poll_response_repository=_get_poll_response_repository(),
+        topic_repository=_get_topic_repository(),
+        participant_counter=get_participant_counter(request),
     )

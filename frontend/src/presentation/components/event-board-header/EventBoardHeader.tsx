@@ -29,13 +29,29 @@ export function EventBoardHeader({
           {event.status}
         </span>
         {isCreator && (
-          <Link
-            to={`/events/${event.code}/admin`}
-            id="event-admin-link"
-            className="rounded bg-amber-600/20 px-2 py-0.5 text-xs font-medium text-amber-400 hover:bg-amber-600/30 transition-colors"
-          >
-            Admin
-          </Link>
+          <>
+            <Link
+              to={`/events/${event.code}/admin`}
+              id="event-admin-link"
+              className="rounded bg-amber-600/20 px-2 py-0.5 text-xs font-medium text-amber-400 hover:bg-amber-600/30 transition-colors"
+            >
+              Admin
+            </Link>
+            <button
+              id="open-present-mode-btn"
+              type="button"
+              onClick={() =>
+                window.open(
+                  `/events/${event.code}/present`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              className="rounded bg-purple-600/20 px-2 py-0.5 text-xs font-medium text-purple-400 hover:bg-purple-600/30 transition-colors"
+            >
+              Present Mode
+            </button>
+          </>
         )}
       </div>
     </div>

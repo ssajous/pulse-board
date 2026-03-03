@@ -11,11 +11,12 @@ from starlette.websockets import WebSocket
 from pulse_board.domain.ports.event_publisher_port import (
     EventPublisher,
 )
+from pulse_board.domain.ports.participant_counter_port import ParticipantCounter
 
 logger = logging.getLogger(__name__)
 
 
-class ConnectionManager(EventPublisher):
+class ConnectionManager(EventPublisher, ParticipantCounter):
     """Manages WebSocket connections and broadcasts domain events.
 
     Implements the ``EventPublisher`` port by serialising domain
@@ -295,6 +296,10 @@ class ConnectionManager(EventPublisher):
                     self._channels[channel] -= dead
                     if not self._channels[channel]:
                         del self._channels[channel]
+
+    def get_channel_count(self, channel: str) -> int:
+        """Return the current count of connections in a channel."""
+        return len(self._channels.get(channel, set()))
 
     async def publish_score_update_to_channel(
         self,

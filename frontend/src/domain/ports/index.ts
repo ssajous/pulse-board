@@ -7,3 +7,4 @@ export type {
 } from "./WebSocketPort";
 export type { EventApiPort, CreateEventRequest } from "./EventApiPort";
 export type { PollApiPort } from "./PollApiPort";
+export type { PresentStateApiPort } from "./PresentStateApiPort";

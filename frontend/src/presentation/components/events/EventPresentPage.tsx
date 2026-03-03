@@ -1,28 +1,39 @@
-import { useParams, Link } from "react-router-dom";
-import { Header } from "@presentation/components/layout";
+import { useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { EventApiClient } from "@infrastructure/api/eventApiClient";
+import { PresentStateApiClient } from "@infrastructure/api/presentStateApiClient";
+import { WebSocketClient } from "@infrastructure/websocket/webSocketClient";
+import { PresentModeViewModel } from "@presentation/view-models/PresentModeViewModel";
+import {
+  PresentModeViewModelProvider,
+} from "@presentation/view-models/PresentModeViewModelContext";
+import { PresentModeView } from "@presentation/components/present-mode";
 
 export function EventPresentPage() {
   const { code } = useParams<{ code: string }>();
 
+  const vm = useMemo(
+    () =>
+      new PresentModeViewModel(
+        new EventApiClient(),
+        new PresentStateApiClient(),
+        new WebSocketClient(),
+      ),
+    [],
+  );
+
+  useEffect(() => {
+    if (code) {
+      void vm.initialize(code);
+    }
+    return () => {
+      vm.dispose();
+    };
+  }, [vm, code]);
+
   return (
-    <>
-      <Header />
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="rounded-lg border border-slate-700 bg-slate-800 p-8 text-center">
-          <h2 className="mb-2 text-xl font-semibold text-white">
-            Presentation Mode
-          </h2>
-          <p className="mb-4 text-slate-400">
-            Presentation view for event {code} coming soon.
-          </p>
-          <Link
-            to={`/events/${code}`}
-            className="text-indigo-400 hover:text-indigo-300"
-          >
-            Back to event board
-          </Link>
-        </div>
-      </main>
-    </>
+    <PresentModeViewModelProvider value={vm}>
+      <PresentModeView />
+    </PresentModeViewModelProvider>
   );
 }

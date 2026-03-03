@@ -10,12 +10,7 @@ import {
   isRecord,
   extractErrorMessage,
 } from "@infrastructure/utils/typeGuards";
-
-function buildWebSocketUrl(): string {
-  const protocol =
-    window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws`;
-}
+import { buildWebSocketUrl } from "@infrastructure/websocket/buildWebSocketUrl";
 
 interface ScoreUpdateMessage {
   type: "score_update";
