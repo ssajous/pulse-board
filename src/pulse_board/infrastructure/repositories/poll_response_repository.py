@@ -134,7 +134,7 @@ class SQLAlchemyPollResponseRepository(PollResponseRepository):
             distribution = {str(r): int(c) for r, c in rows}
             total = sum(distribution.values())
             total_rating = sum(int(r) * int(c) for r, c in rows)
-            avg = round(total_rating / total, 2) if total > 0 else None
+            avg = round(total_rating / total, 2)
             return avg, distribution
 
     def list_open_text_by_poll(

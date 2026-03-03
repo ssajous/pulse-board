@@ -192,23 +192,7 @@ export class PollParticipationViewModel {
   }
 
   private handlePollActivated(poll: Poll): void {
-    this.ratingVm?.dispose();
-    this.openTextVm?.dispose();
-    this.ratingVm = null;
-    this.openTextVm = null;
-
-    if (poll.poll_type === "rating") {
-      this.ratingVm = new RatingPollViewModel(
-        this._api,
-        this._fingerprint,
-      );
-    } else if (poll.poll_type === "open_text") {
-      this.openTextVm = new OpenTextPollViewModel(
-        this._api,
-        this._fingerprint,
-      );
-    }
-
+    this.initSubVm(poll);
     this.resetPollState(poll);
   }
 

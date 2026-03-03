@@ -76,8 +76,7 @@ class Poll:
             ValidationError: If question or options fail domain
                 validation rules, or poll_type is unknown.
         """
-        if poll_type not in VALID_POLL_TYPES:
-            cls._validate_poll_type(poll_type)
+        cls._validate_poll_type(poll_type)
 
         cleaned_question = question.strip()
         cls._validate_question(cleaned_question)
@@ -114,7 +113,7 @@ class Poll:
 
     @staticmethod
     def _validate_poll_type(poll_type: str) -> None:
-        """Raise ValidationError for unknown poll types.
+        """Validate poll type against allowed values.
 
         Args:
             poll_type: The poll type string to validate.
@@ -122,10 +121,11 @@ class Poll:
         Raises:
             ValidationError: If poll_type is not in VALID_POLL_TYPES.
         """
-        valid = ", ".join(sorted(VALID_POLL_TYPES))
-        raise ValidationError(
-            f"Unknown poll type '{poll_type}'. Must be one of: {valid}"
-        )
+        if poll_type not in VALID_POLL_TYPES:
+            valid = ", ".join(sorted(VALID_POLL_TYPES))
+            raise ValidationError(
+                f"Unknown poll type '{poll_type}'. Must be one of: {valid}"
+            )
 
     @staticmethod
     def _validate_question(question: str) -> None:

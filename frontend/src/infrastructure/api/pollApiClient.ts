@@ -120,7 +120,8 @@ export class PollApiClient implements PollApiPort {
     const params = new URLSearchParams();
     if (page !== undefined) params.set("page", String(page));
     if (pageSize !== undefined) params.set("page_size", String(pageSize));
-    const query = params.toString() ? `?${params.toString()}` : "";
+    const qs = params.toString();
+    const query = qs ? `?${qs}` : "";
 
     const response = await fetch(
       `/api/polls/${pollId}/results${query}`,
