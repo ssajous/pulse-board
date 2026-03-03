@@ -1,5 +1,5 @@
 import { makeAutoObservable, observable, runInAction } from "mobx";
-import type { Topic } from "@domain/entities/Topic";
+import type { Topic, TopicStatus } from "@domain/entities/Topic";
 import type { TopicApiPort } from "@domain/ports/TopicApiPort";
 import type { VoteApiPort } from "@domain/ports/VoteApiPort";
 import type { FingerprintPort } from "@domain/ports/FingerprintPort";
@@ -33,10 +33,22 @@ interface NewTopicMessage {
   };
 }
 
+interface TopicStatusChangedMessage {
+  type: "topic_status_changed";
+  topic_id: string;
+  new_status: TopicStatus;
+}
+
+interface EventClosedMessage {
+  type: "event_closed";
+}
+
 type WebSocketMessage =
   | ScoreUpdateMessage
   | TopicCensuredMessage
-  | NewTopicMessage;
+  | NewTopicMessage
+  | TopicStatusChangedMessage
+  | EventClosedMessage;
 
 function isWebSocketMessage(
   data: unknown
@@ -62,6 +74,15 @@ function isWebSocketMessage(
       && typeof t.created_at === "string"
     );
   }
+  if (data.type === "topic_status_changed") {
+    return (
+      typeof data.topic_id === "string"
+      && typeof data.new_status === "string"
+    );
+  }
+  if (data.type === "event_closed") {
+    return true;
+  }
   return false;
 }
 
@@ -75,6 +96,7 @@ export class TopicsViewModel {
   isLoading = false;
   error: string | null = null;
   toast: ToastMessage | null = null;
+  isEventClosed = false;
 
   userVotes: Map<string, number> = observable.map();
   fingerprintId: string | null = null;
@@ -112,7 +134,14 @@ export class TopicsViewModel {
   }
 
   get sortedTopics(): Topic[] {
-    return [...this.topics].sort((a, b) => {
+    const visible = this.topics.filter(
+      (t) => t.status !== "archived",
+    );
+    return visible.sort((a, b) => {
+      const aHighlighted = a.status === "highlighted" ? 1 : 0;
+      const bHighlighted = b.status === "highlighted" ? 1 : 0;
+      if (bHighlighted !== aHighlighted)
+        return bHighlighted - aHighlighted;
       if (b.score !== a.score) return b.score - a.score;
       return (
         new Date(b.created_at).getTime()
@@ -298,6 +327,15 @@ export class TopicsViewModel {
       case "new_topic":
         this.handleNewTopic(data.topic);
         break;
+      case "topic_status_changed":
+        this.handleTopicStatusChanged(
+          data.topic_id,
+          data.new_status,
+        );
+        break;
+      case "event_closed":
+        this.isEventClosed = true;
+        break;
     }
   }
 
@@ -323,6 +361,19 @@ export class TopicsViewModel {
     if (this.topics.some((t) => t.id === topic.id)) return;
 
     this.topics = [...this.topics, topic];
+  }
+
+  private handleTopicStatusChanged(
+    topicId: string,
+    newStatus: TopicStatus,
+  ): void {
+    if (newStatus === "archived") {
+      this.topics = this.topics.filter((t) => t.id !== topicId);
+      return;
+    }
+    this.topics = this.topics.map((t) =>
+      t.id === topicId ? { ...t, status: newStatus } : t,
+    );
   }
 
   private handleReconnect(): void {

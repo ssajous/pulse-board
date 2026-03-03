@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pulse_board.application.use_cases.check_event_creator import (
     CheckEventCreatorUseCase,
 )
+from pulse_board.application.use_cases.close_event import CloseEventUseCase
 from pulse_board.application.use_cases.create_event import (
     CreateEventUseCase,
 )
@@ -18,6 +19,7 @@ from pulse_board.application.use_cases.create_topic import (
 from pulse_board.application.use_cases.get_event import (
     GetEventUseCase,
 )
+from pulse_board.application.use_cases.get_event_stats import GetEventStatsUseCase
 from pulse_board.application.use_cases.get_present_state import GetPresentStateUseCase
 from pulse_board.application.use_cases.join_event import (
     JoinEventUseCase,
@@ -25,24 +27,34 @@ from pulse_board.application.use_cases.join_event import (
 from pulse_board.application.use_cases.list_event_topics import (
     ListEventTopicsUseCase,
 )
+from pulse_board.application.use_cases.update_topic_status import (
+    UpdateTopicStatusUseCase,
+)
+from pulse_board.domain.entities.topic import TopicStatus
 from pulse_board.domain.exceptions import EventNotFoundError
 from pulse_board.domain.ports.event_publisher_port import (
     EventPublisher,
 )
 from pulse_board.presentation.api.dependencies import (
     get_check_event_creator_use_case,
+    get_close_event_use_case,
     get_create_event_use_case,
     get_create_topic_use_case,
     get_event_publisher,
+    get_get_event_stats_use_case,
     get_get_event_use_case,
     get_get_present_state_use_case,
     get_join_event_use_case,
     get_list_event_topics_use_case,
+    get_update_topic_status_use_case,
+    validate_creator_token,
 )
 from pulse_board.presentation.api.schemas.events import (
     CheckCreatorResponse,
+    CloseEventResponse,
     CreateEventRequest,
     EventResponse,
+    EventStatsResponse,
 )
 from pulse_board.presentation.api.schemas.present_state import (
     PresentActivePollSchema,
@@ -54,6 +66,8 @@ from pulse_board.presentation.api.schemas.topics import (
     CreateTopicRequest,
     TopicListResponse,
     TopicResponse,
+    TopicStatusResponse,
+    UpdateTopicStatusRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -223,6 +237,143 @@ async def get_present_state(
     )
 
 
+@router.patch(
+    "/{event_id}/topics/{topic_id}/status",
+    response_model=TopicStatusResponse,
+    summary="Update a topic's lifecycle status (host only)",
+    description=(
+        "Change the status of a topic within an event. "
+        "Requires a valid X-Creator-Token header. "
+        "Broadcasts the change to all event participants via WebSocket."
+    ),
+    responses={
+        200: {"description": "Topic status updated"},
+        403: {"description": "Invalid or missing creator token"},
+        404: {"description": "Topic or event not found"},
+        422: {"description": "Invalid status value"},
+    },
+)
+async def update_topic_status(
+    event_id: uuid.UUID,
+    topic_id: uuid.UUID,
+    request: UpdateTopicStatusRequest,
+    use_case: UpdateTopicStatusUseCase = Depends(
+        get_update_topic_status_use_case,
+    ),
+    get_event_uc: GetEventUseCase = Depends(get_get_event_use_case),
+    publisher: EventPublisher = Depends(get_event_publisher),
+    _: None = Depends(validate_creator_token),
+) -> TopicStatusResponse:
+    """Update a topic's lifecycle status and broadcast the change."""
+    try:
+        new_status = TopicStatus(request.status)
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid status value: '{request.status}'.",
+        )
+
+    result = await asyncio.to_thread(
+        use_case.execute,
+        topic_id,
+        new_status,
+        event_id,
+    )
+
+    try:
+        event = await asyncio.to_thread(get_event_uc.execute, event_id)
+        channel = f"event:{event.code}"
+        await publisher.publish_topic_status_changed_to_channel(
+            channel,
+            topic_id,
+            result.new_status,
+        )
+    except Exception:
+        logger.warning(
+            "Failed to broadcast topic_status_changed to event channel",
+            exc_info=True,
+        )
+
+    return TopicStatusResponse(
+        topic_id=str(result.topic_id),
+        new_status=result.new_status,
+    )
+
+
+@router.get(
+    "/{event_id}/stats",
+    response_model=EventStatsResponse,
+    summary="Get event statistics (host only)",
+    description=(
+        "Return aggregated statistics for a live event: participant count, "
+        "topic counts, poll counts, and total poll responses. "
+        "Requires a valid X-Creator-Token header."
+    ),
+    responses={
+        200: {"description": "Event statistics"},
+        403: {"description": "Invalid or missing creator token"},
+        404: {"description": "Event not found"},
+    },
+)
+async def get_event_stats(
+    event_id: uuid.UUID,
+    use_case: GetEventStatsUseCase = Depends(get_get_event_stats_use_case),
+    _: None = Depends(validate_creator_token),
+) -> EventStatsResponse:
+    """Return aggregated statistics for the host dashboard."""
+    result = await asyncio.to_thread(use_case.execute, event_id)
+    return EventStatsResponse(
+        participant_count=result.participant_count,
+        topic_count=result.topic_count,
+        active_topic_count=result.active_topic_count,
+        poll_count=result.poll_count,
+        has_active_poll=result.has_active_poll,
+        total_poll_responses=result.total_poll_responses,
+    )
+
+
+@router.patch(
+    "/{event_id}/close",
+    response_model=CloseEventResponse,
+    summary="Close an event (host only)",
+    description=(
+        "Transition an active event to the closed state. "
+        "Idempotent — closing an already-closed event is a no-op. "
+        "Requires a valid X-Creator-Token header. "
+        "Broadcasts closure to all event participants via WebSocket."
+    ),
+    responses={
+        200: {"description": "Event closed successfully"},
+        403: {"description": "Invalid or missing creator token"},
+        404: {"description": "Event not found"},
+    },
+)
+async def close_event(
+    event_id: uuid.UUID,
+    use_case: CloseEventUseCase = Depends(get_close_event_use_case),
+    get_event_uc: GetEventUseCase = Depends(get_get_event_use_case),
+    publisher: EventPublisher = Depends(get_event_publisher),
+    _: None = Depends(validate_creator_token),
+) -> CloseEventResponse:
+    """Close a live event session and broadcast the closure."""
+    result = await asyncio.to_thread(use_case.execute, event_id)
+
+    try:
+        event = await asyncio.to_thread(get_event_uc.execute, event_id)
+        channel = f"event:{event.code}"
+        await publisher.publish_event_closed_to_channel(channel, event_id)
+    except Exception:
+        logger.warning(
+            "Failed to broadcast event_closed to event channel",
+            exc_info=True,
+        )
+
+    return CloseEventResponse(
+        event_id=str(result.event_id),
+        status=result.status,
+    )
+
+
 @router.get(
     "/{event_id}",
     response_model=EventResponse,
@@ -279,6 +430,7 @@ async def list_event_topics(
                 content=s.content,
                 score=s.score,
                 created_at=s.created_at,
+                status=s.status,
             )
             for s in summaries
         ]

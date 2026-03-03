@@ -1,5 +1,6 @@
 """Check event creator use case."""
 
+import hmac
 import uuid
 from dataclasses import dataclass
 
@@ -48,7 +49,7 @@ class CheckEventCreatorUseCase:
         if event is None:
             raise EventNotFoundError(f"Event {event_id} not found")
 
-        is_creator = (
-            event.creator_token is not None and event.creator_token == creator_token
+        is_creator = event.creator_token is not None and hmac.compare_digest(
+            event.creator_token, creator_token
         )
         return CheckEventCreatorResult(is_creator=is_creator)

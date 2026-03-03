@@ -113,3 +113,52 @@ class EventListResponse(BaseModel):
     events: list[EventResponse] = Field(
         description="List of events",
     )
+
+
+class EventStatsResponse(BaseModel):
+    """Aggregated statistics for a live event (host dashboard)."""
+
+    participant_count: int = Field(
+        description="Number of currently connected participants",
+    )
+    topic_count: int = Field(
+        description="Total number of topics submitted for the event",
+    )
+    active_topic_count: int = Field(
+        description="Number of topics with active status",
+    )
+    poll_count: int = Field(
+        description="Total number of polls created for the event",
+    )
+    has_active_poll: bool = Field(
+        description="Whether any poll is currently active",
+    )
+    total_poll_responses: int = Field(
+        description="Total poll responses across all polls",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "participant_count": 42,
+                    "topic_count": 15,
+                    "active_topic_count": 10,
+                    "poll_count": 3,
+                    "has_active_poll": True,
+                    "total_poll_responses": 120,
+                }
+            ]
+        }
+    }
+
+
+class CloseEventResponse(BaseModel):
+    """Response for a successful event closure."""
+
+    event_id: str = Field(
+        description="Unique event identifier",
+    )
+    status: str = Field(
+        description="Final event status (always 'closed')",
+    )

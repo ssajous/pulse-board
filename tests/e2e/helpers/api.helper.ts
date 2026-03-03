@@ -23,6 +23,7 @@ interface EventResponse {
   end_date: string | null;
   status: string;
   created_at: string;
+  creator_token: string | null;
 }
 
 export interface PollOptionResponse {
@@ -252,4 +253,62 @@ export async function getPollResultsViaApi(
   }
 
   return response.json() as Promise<PollResultsResponse>;
+}
+
+export interface TopicStatusResponse {
+  topic_id: string;
+  new_status: string;
+}
+
+export interface CloseEventApiResponse {
+  event_id: string;
+  status: string;
+}
+
+export async function updateTopicStatusViaApi(
+  eventId: string,
+  topicId: string,
+  status: string,
+  creatorToken: string
+): Promise<TopicStatusResponse> {
+  const response = await fetch(
+    `${API_BASE}/events/${eventId}/topics/${topicId}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Creator-Token": creatorToken,
+      },
+      body: JSON.stringify({ status }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to update topic status: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<TopicStatusResponse>;
+}
+
+export async function closeEventViaApi(
+  eventId: string,
+  creatorToken: string
+): Promise<CloseEventApiResponse> {
+  const response = await fetch(`${API_BASE}/events/${eventId}/close`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Creator-Token": creatorToken,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to close event: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<CloseEventApiResponse>;
 }

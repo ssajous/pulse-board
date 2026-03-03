@@ -10,6 +10,7 @@ from pulse_board.application.use_cases.cast_vote import CastVoteUseCase
 from pulse_board.application.use_cases.check_event_creator import (
     CheckEventCreatorUseCase,
 )
+from pulse_board.application.use_cases.close_event import CloseEventUseCase
 from pulse_board.application.use_cases.create_event import (
     CreateEventUseCase,
 )
@@ -20,6 +21,7 @@ from pulse_board.application.use_cases.create_topic import (
     CreateTopicUseCase,
 )
 from pulse_board.application.use_cases.get_event import GetEventUseCase
+from pulse_board.application.use_cases.get_event_stats import GetEventStatsUseCase
 from pulse_board.application.use_cases.get_poll_results import (
     GetPollResultsUseCase,
 )
@@ -31,6 +33,9 @@ from pulse_board.application.use_cases.list_topics import ListTopicsUseCase
 from pulse_board.application.use_cases.submit_poll_response import (
     SubmitPollResponseUseCase,
 )
+from pulse_board.application.use_cases.update_topic_status import (
+    UpdateTopicStatusUseCase,
+)
 from pulse_board.domain.services.join_code_generator import (
     JoinCodeGenerator,
 )
@@ -40,10 +45,12 @@ from pulse_board.presentation.api.dependencies import (
     get_activate_poll_use_case,
     get_cast_vote_use_case,
     get_check_event_creator_use_case,
+    get_close_event_use_case,
     get_create_event_use_case,
     get_create_poll_use_case,
     get_create_topic_use_case,
     get_event_publisher,
+    get_get_event_stats_use_case,
     get_get_event_use_case,
     get_get_poll_results_use_case,
     get_join_event_use_case,
@@ -51,10 +58,13 @@ from pulse_board.presentation.api.dependencies import (
     get_list_topics_use_case,
     get_poll_repository,
     get_submit_poll_response_use_case,
+    get_update_topic_status_use_case,
+    validate_creator_token,
 )
 from tests.unit.pulse_board.fakes import (
     FakeEventPublisher,
     FakeEventRepository,
+    FakeParticipantCounter,
     FakePollRepository,
     FakePollResponseRepository,
     FakeTopicRepository,
@@ -155,4 +165,19 @@ def client(
         poll_repository=fake_poll_repo,
         poll_response_repository=fake_poll_response_repo,
     )
+    overrides[get_update_topic_status_use_case] = lambda: UpdateTopicStatusUseCase(
+        topic_repository=fake_repo,
+    )
+    overrides[get_close_event_use_case] = lambda: CloseEventUseCase(
+        event_repository=fake_event_repo,
+    )
+    fake_participant_counter = FakeParticipantCounter()
+    overrides[get_get_event_stats_use_case] = lambda: GetEventStatsUseCase(
+        event_repository=fake_event_repo,
+        topic_repository=fake_repo,
+        poll_repository=fake_poll_repo,
+        poll_response_repository=fake_poll_response_repo,
+        participant_counter=fake_participant_counter,
+    )
+    overrides[validate_creator_token] = lambda: None
     return TestClient(app)

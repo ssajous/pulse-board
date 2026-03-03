@@ -17,6 +17,7 @@ class TopicSummary:
     content: str
     score: int
     created_at: datetime
+    status: str = "active"
 
 
 class ListTopicsUseCase:

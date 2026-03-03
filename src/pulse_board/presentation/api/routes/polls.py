@@ -218,6 +218,7 @@ async def activate_poll(
                 channel,
                 result.id,
                 result.question,
+                result.poll_type,
                 result.options,
             )
         else:

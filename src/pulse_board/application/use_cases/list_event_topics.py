@@ -34,6 +34,7 @@ class ListEventTopicsUseCase:
                 content=t.content,
                 score=t.score,
                 created_at=t.created_at,
+                status=t.status.value,
             )
             for t in sorted_topics
         ]

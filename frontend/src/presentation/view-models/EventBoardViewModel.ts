@@ -80,6 +80,10 @@ export class EventBoardViewModel {
     }
   }
 
+  get isEventClosed(): boolean {
+    return this.topicsViewModel?.isEventClosed ?? false;
+  }
+
   dispose(): void {
     this.topicsViewModel?.dispose();
     this.topicsViewModel = null;

@@ -298,6 +298,186 @@ describe("TopicsViewModel", () => {
     });
   });
 
+  describe("handleTopicStatusChanged (via WebSocket)", () => {
+    it("updates topic status when status changes to highlighted", async () => {
+      const topic = makeTopic({ id: "t1", status: "active" });
+      const api = createMockApi([topic]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      messageHandler.current!({
+        type: "topic_status_changed",
+        topic_id: "t1",
+        new_status: "highlighted",
+      });
+
+      const updated = vm.topics.find((t) => t.id === "t1");
+      expect(updated?.status).toBe("highlighted");
+    });
+
+    it("updates topic status when status changes to answered", async () => {
+      const topic = makeTopic({ id: "t1", status: "active" });
+      const api = createMockApi([topic]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      messageHandler.current!({
+        type: "topic_status_changed",
+        topic_id: "t1",
+        new_status: "answered",
+      });
+
+      const updated = vm.topics.find((t) => t.id === "t1");
+      expect(updated?.status).toBe("answered");
+    });
+
+    it("removes topic from the list when status is archived", async () => {
+      const topic = makeTopic({ id: "t1", status: "active" });
+      const api = createMockApi([topic]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      expect(vm.topics).toHaveLength(1);
+
+      messageHandler.current!({
+        type: "topic_status_changed",
+        topic_id: "t1",
+        new_status: "archived",
+      });
+
+      expect(vm.topics).toHaveLength(0);
+    });
+
+    it("leaves other topics unchanged when one topic changes status", async () => {
+      const topics = [
+        makeTopic({ id: "t1", status: "active" }),
+        makeTopic({ id: "t2", content: "Second topic", status: "active" }),
+      ];
+      const api = createMockApi(topics);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      messageHandler.current!({
+        type: "topic_status_changed",
+        topic_id: "t1",
+        new_status: "highlighted",
+      });
+
+      const t2 = vm.topics.find((t) => t.id === "t2");
+      expect(t2?.status).toBe("active");
+    });
+
+    it("ignores status change for unknown topic id", async () => {
+      const topic = makeTopic({ id: "t1", status: "active" });
+      const api = createMockApi([topic]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      messageHandler.current!({
+        type: "topic_status_changed",
+        topic_id: "nonexistent",
+        new_status: "highlighted",
+      });
+
+      expect(vm.topics).toHaveLength(1);
+      expect(vm.topics[0].status).toBe("active");
+    });
+  });
+
+  describe("handleEventClosed (via WebSocket)", () => {
+    it("sets isEventClosed to true when event_closed is received", async () => {
+      const api = createMockApi([makeTopic()]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      expect(vm.isEventClosed).toBe(false);
+
+      messageHandler.current!({
+        type: "event_closed",
+      });
+
+      expect(vm.isEventClosed).toBe(true);
+    });
+
+    it("remains true if event_closed is received multiple times", async () => {
+      const api = createMockApi([makeTopic()]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      messageHandler.current!({ type: "event_closed" });
+      messageHandler.current!({ type: "event_closed" });
+
+      expect(vm.isEventClosed).toBe(true);
+    });
+
+    it("does not affect topics when event_closed is received", async () => {
+      const topic = makeTopic({ id: "t1" });
+      const api = createMockApi([topic]);
+      const { ws, messageHandler } = createMockWs();
+
+      const vm = new TopicsViewModel(
+        api,
+        undefined,
+        undefined,
+        ws,
+      );
+      await flushMicrotasks();
+
+      messageHandler.current!({ type: "event_closed" });
+
+      expect(vm.topics).toHaveLength(1);
+    });
+  });
+
   describe("submitTopic", () => {
     it("adds topic from API response without calling fetchTopics again", async () => {
       const api = createMockApi([makeTopic({ id: "initial" })]);
@@ -449,6 +629,56 @@ describe("TopicsViewModel", () => {
 
       const sorted = vm.sortedTopics;
       expect(sorted.map((t) => t.id)).toEqual(["c", "b", "a"]);
+    });
+
+    it("floats highlighted topics to the top", async () => {
+      const topics = [
+        makeTopic({
+          id: "normal",
+          score: 10,
+          created_at: "2026-02-17T10:00:00Z",
+          status: "active",
+        }),
+        makeTopic({
+          id: "highlighted",
+          score: 1,
+          created_at: "2026-02-17T09:00:00Z",
+          status: "highlighted",
+        }),
+      ];
+      const api = createMockApi(topics);
+
+      const vm = new TopicsViewModel(api);
+      await flushMicrotasks();
+
+      const sorted = vm.sortedTopics;
+      expect(sorted[0].id).toBe("highlighted");
+      expect(sorted[1].id).toBe("normal");
+    });
+
+    it("filters out archived topics", async () => {
+      const topics = [
+        makeTopic({
+          id: "active",
+          score: 5,
+          created_at: "2026-02-17T10:00:00Z",
+          status: "active",
+        }),
+        makeTopic({
+          id: "archived",
+          score: 10,
+          created_at: "2026-02-17T11:00:00Z",
+          status: "archived",
+        }),
+      ];
+      const api = createMockApi(topics);
+
+      const vm = new TopicsViewModel(api);
+      await flushMicrotasks();
+
+      const sorted = vm.sortedTopics;
+      expect(sorted).toHaveLength(1);
+      expect(sorted[0].id).toBe("active");
     });
   });
 

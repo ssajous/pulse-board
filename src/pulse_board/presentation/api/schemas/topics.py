@@ -40,6 +40,10 @@ class TopicResponse(BaseModel):
     created_at: datetime = Field(
         description="Topic creation timestamp",
     )
+    status: str = Field(
+        default="active",
+        description="Lifecycle status of the topic",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -49,10 +53,40 @@ class TopicResponse(BaseModel):
                     "content": "Should we adopt async standup meetings?",
                     "score": 5,
                     "created_at": "2026-02-17T12:00:00Z",
+                    "status": "active",
                 }
             ]
         }
     }
+
+
+class UpdateTopicStatusRequest(BaseModel):
+    """Request body for updating a topic's lifecycle status."""
+
+    status: str = Field(
+        description=(
+            "New lifecycle status. One of: active, highlighted, answered, archived."
+        ),
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"status": "answered"},
+            ]
+        }
+    }
+
+
+class TopicStatusResponse(BaseModel):
+    """Response for a successful topic status update."""
+
+    topic_id: str = Field(
+        description="Unique topic identifier",
+    )
+    new_status: str = Field(
+        description="The status the topic was transitioned to",
+    )
 
 
 class TopicListResponse(BaseModel):

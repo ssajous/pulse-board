@@ -45,3 +45,8 @@ export {
   OpenTextPollViewModelProvider,
   useOpenTextPollViewModel,
 } from "./OpenTextPollViewModelContext";
+export { HostDashboardViewModel } from "./HostDashboardViewModel";
+export {
+  HostDashboardViewModelProvider,
+  useHostDashboardViewModel,
+} from "./HostDashboardViewModelContext";
