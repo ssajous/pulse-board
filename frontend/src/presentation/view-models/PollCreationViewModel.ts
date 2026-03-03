@@ -1,13 +1,16 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import type { Poll } from "@domain/entities/Poll";
+import type { Poll, PollType } from "@domain/entities/Poll";
 import type { PollApiPort } from "@domain/ports/PollApiPort";
 
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 10;
 const MAX_QUESTION_LENGTH = 500;
 
+const TYPES_WITHOUT_OPTIONS: PollType[] = ["rating", "open_text"];
+
 export class PollCreationViewModel {
   question = "";
+  pollType: PollType = "multiple_choice";
   options: string[] = ["", ""];
   isSubmitting = false;
   error: string | null = null;
@@ -20,6 +23,10 @@ export class PollCreationViewModel {
     makeAutoObservable(this, {}, { autoBind: true });
   }
 
+  get requiresOptions(): boolean {
+    return !TYPES_WITHOUT_OPTIONS.includes(this.pollType);
+  }
+
   get isValid(): boolean {
     const questionTrimmed = this.question.trim();
     if (
@@ -28,6 +35,7 @@ export class PollCreationViewModel {
     ) {
       return false;
     }
+    if (!this.requiresOptions) return true;
     if (
       this.options.length < MIN_OPTIONS
       || this.options.length > MAX_OPTIONS
@@ -47,6 +55,11 @@ export class PollCreationViewModel {
 
   setQuestion(value: string): void {
     this.question = value;
+  }
+
+  setPollType(type: PollType): void {
+    this.pollType = type;
+    this.options = ["", ""];
   }
 
   addOption(): void {
@@ -70,10 +83,17 @@ export class PollCreationViewModel {
     this.isSubmitting = true;
     this.error = null;
     try {
-      const poll = await this._api.createPoll(eventId, {
-        question: this.question.trim(),
-        options: this.options.map((o) => o.trim()),
-      });
+      const request = this.requiresOptions
+        ? {
+            question: this.question.trim(),
+            options: this.options.map((o) => o.trim()),
+            poll_type: this.pollType,
+          }
+        : {
+            question: this.question.trim(),
+            poll_type: this.pollType,
+          };
+      const poll = await this._api.createPoll(eventId, request);
       runInAction(() => {
         this.createdPoll = poll;
         this.isSubmitting = false;
@@ -89,6 +109,7 @@ export class PollCreationViewModel {
 
   reset(): void {
     this.question = "";
+    this.pollType = "multiple_choice";
     this.options = ["", ""];
     this.isSubmitting = false;
     this.error = null;

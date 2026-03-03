@@ -293,6 +293,7 @@ describe("PollParticipationViewModel", () => {
         "poll-42",
         "fp-test-123",
         "opt-1",
+        null,
       );
       expect(api.getResults).toHaveBeenCalledWith("poll-42");
       expect(vm.hasSubmitted).toBe(true);
@@ -473,7 +474,7 @@ describe("PollParticipationViewModel", () => {
 
       expect(vm.hasSubmitted).toBe(true);
 
-      const updatedResults = [
+      const updatedOptions = [
         { option_id: "opt-1", text: "Red", count: 15, percentage: 60.0 },
         { option_id: "opt-2", text: "Blue", count: 10, percentage: 40.0 },
       ];
@@ -481,12 +482,13 @@ describe("PollParticipationViewModel", () => {
       wsResult.messageHandler.current!({
         type: "poll_results_updated",
         poll_id: "poll-1",
-        results: updatedResults,
+        poll_type: "multiple_choice",
+        results: { options: updatedOptions },
       });
 
       expect(vm.results).not.toBeNull();
       expect(vm.results!.total_votes).toBe(25);
-      expect(vm.results!.options).toEqual(updatedResults);
+      expect(vm.results!.options).toEqual(updatedOptions);
     });
 
     it("does not update results when user has not submitted", async () => {
@@ -538,9 +540,12 @@ describe("PollParticipationViewModel", () => {
       wsResult.messageHandler.current!({
         type: "poll_results_updated",
         poll_id: "poll-1",
-        results: [
-          { option_id: "opt-1", text: "Red", count: 1, percentage: 100.0 },
-        ],
+        poll_type: "multiple_choice",
+        results: {
+          options: [
+            { option_id: "opt-1", text: "Red", count: 1, percentage: 100.0 },
+          ],
+        },
       });
 
       expect(vm.results!.question).toBe("Specific question?");

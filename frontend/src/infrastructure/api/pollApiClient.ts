@@ -1,4 +1,8 @@
-import type { Poll, PollResults, PollSubmitResponse } from "@domain/entities/Poll";
+import type {
+  Poll,
+  AnyPollResults,
+  PollSubmitResponse,
+} from "@domain/entities/Poll";
 import type { CreatePollRequest, PollApiPort } from "@domain/ports/PollApiPort";
 import type { ErrorResponse } from "./types";
 
@@ -11,10 +15,16 @@ export class PollApiClient implements PollApiPort {
     eventId: string,
     request: CreatePollRequest,
   ): Promise<Poll> {
+    const body: Record<string, unknown> = {
+      question: request.question,
+    };
+    if (request.options !== undefined) body.options = request.options;
+    if (request.poll_type !== undefined) body.poll_type = request.poll_type;
+
     const response = await fetch(`/api/events/${eventId}/polls`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
+      body: JSON.stringify(body),
     });
 
     if (response.status === 422) {
@@ -78,7 +88,8 @@ export class PollApiClient implements PollApiPort {
   async submitResponse(
     pollId: string,
     fingerprintId: string,
-    optionId: string,
+    optionId: string | null,
+    responseValue?: number | string | null,
   ): Promise<PollSubmitResponse> {
     const response = await fetch(`/api/polls/${pollId}/respond`, {
       method: "POST",
@@ -86,6 +97,7 @@ export class PollApiClient implements PollApiPort {
       body: JSON.stringify({
         fingerprint_id: fingerprintId,
         option_id: optionId,
+        response_value: responseValue ?? null,
       }),
     });
 
@@ -100,8 +112,19 @@ export class PollApiClient implements PollApiPort {
     return response.json();
   }
 
-  async getResults(pollId: string): Promise<PollResults> {
-    const response = await fetch(`/api/polls/${pollId}/results`);
+  async getResults(
+    pollId: string,
+    page?: number,
+    pageSize?: number,
+  ): Promise<AnyPollResults> {
+    const params = new URLSearchParams();
+    if (page !== undefined) params.set("page", String(page));
+    if (pageSize !== undefined) params.set("page_size", String(pageSize));
+    const query = params.toString() ? `?${params.toString()}` : "";
+
+    const response = await fetch(
+      `/api/polls/${pollId}/results${query}`,
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch poll results");

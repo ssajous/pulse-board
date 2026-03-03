@@ -39,3 +39,32 @@ export interface PollSubmitResponse {
   readonly option_id: string;
   readonly created_at: string;
 }
+
+export interface RatingPollResults {
+  readonly poll_id: string;
+  readonly question: string;
+  readonly total_votes: number;
+  readonly average_rating: number | null;
+  readonly distribution: Record<string, number>;
+}
+
+export interface OpenTextResponse {
+  readonly id: string;
+  readonly text: string;
+  readonly created_at: string;
+}
+
+export interface OpenTextPollResults {
+  readonly poll_id: string;
+  readonly question: string;
+  readonly total_responses: number;
+  readonly responses: OpenTextResponse[];
+  readonly page: number;
+  readonly page_size: number;
+  readonly total_pages: number;
+}
+
+export type AnyPollResults =
+  | PollResults
+  | RatingPollResults
+  | OpenTextPollResults;

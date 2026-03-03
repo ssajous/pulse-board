@@ -35,3 +35,13 @@ export {
   usePollResultsViewModel,
 } from "./PollResultsViewModelContext";
 export { EventAdminViewModel } from "./EventAdminViewModel";
+export { RatingPollViewModel } from "./RatingPollViewModel";
+export {
+  RatingPollViewModelProvider,
+  useRatingPollViewModel,
+} from "./RatingPollViewModelContext";
+export { OpenTextPollViewModel } from "./OpenTextPollViewModel";
+export {
+  OpenTextPollViewModelProvider,
+  useOpenTextPollViewModel,
+} from "./OpenTextPollViewModelContext";

@@ -1,0 +1,1 @@
+export { RatingPollResults } from "./RatingPollResults";

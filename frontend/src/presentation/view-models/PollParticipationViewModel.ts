@@ -1,10 +1,17 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import type { Poll, PollResults } from "@domain/entities/Poll";
+import type {
+  Poll,
+  PollResults,
+  PollType,
+  RatingPollResults,
+} from "@domain/entities/Poll";
 import type { PollApiPort } from "@domain/ports/PollApiPort";
 import type { WebSocketPort } from "@domain/ports/WebSocketPort";
 import type { FingerprintPort } from "@domain/ports/FingerprintPort";
 import { logger } from "@infrastructure/logger";
 import { isRecord } from "@infrastructure/utils/typeGuards";
+import { RatingPollViewModel } from "./RatingPollViewModel";
+import { OpenTextPollViewModel } from "./OpenTextPollViewModel";
 
 export class PollParticipationViewModel {
   activePoll: Poll | null = null;
@@ -13,6 +20,8 @@ export class PollParticipationViewModel {
   hasSubmitted = false;
   error: string | null = null;
   results: PollResults | null = null;
+  ratingVm: RatingPollViewModel | null = null;
+  openTextVm: OpenTextPollViewModel | null = null;
 
   private readonly _api: PollApiPort;
   private readonly _ws: WebSocketPort;
@@ -53,6 +62,9 @@ export class PollParticipationViewModel {
       const poll = await this._api.getActivePoll(eventId);
       runInAction(() => {
         this.activePoll = poll;
+        if (poll) {
+          this.initSubVm(poll);
+        }
       });
     } catch (e) {
       runInAction(() => {
@@ -77,13 +89,12 @@ export class PollParticipationViewModel {
         this.activePoll.id,
         fingerprintId,
         this.selectedOptionId,
+        null,
       );
-      const results = await this._api.getResults(
-        this.activePoll.id,
-      );
+      const results = await this._api.getResults(this.activePoll.id);
       runInAction(() => {
         this.hasSubmitted = true;
-        this.results = results;
+        this.results = results as PollResults;
         this.isSubmitting = false;
       });
     } catch (e) {
@@ -94,6 +105,25 @@ export class PollParticipationViewModel {
             : "Failed to submit response";
         this.isSubmitting = false;
       });
+    }
+  }
+
+  private initSubVm(poll: Poll): void {
+    this.ratingVm?.dispose();
+    this.openTextVm?.dispose();
+    this.ratingVm = null;
+    this.openTextVm = null;
+
+    if (poll.poll_type === "rating") {
+      this.ratingVm = new RatingPollViewModel(
+        this._api,
+        this._fingerprint,
+      );
+    } else if (poll.poll_type === "open_text") {
+      this.openTextVm = new OpenTextPollViewModel(
+        this._api,
+        this._fingerprint,
+      );
     }
   }
 
@@ -108,8 +138,10 @@ export class PollParticipationViewModel {
             id: data.poll_id as string,
             event_id: "",
             question: data.question as string,
-            poll_type: "multiple_choice",
-            options: data.options as Poll["options"],
+            poll_type:
+              ((data.poll_type as string) as PollType)
+              ?? "multiple_choice",
+            options: (data.options as Poll["options"]) ?? [],
             is_active: true,
             created_at: new Date().toISOString(),
           };
@@ -120,18 +152,31 @@ export class PollParticipationViewModel {
           this.handlePollDeactivated();
           break;
         case "poll_results_updated": {
-          if (!Array.isArray(data.results)) break;
-          const options = data.results as PollResults["options"];
-          const totalVotes = options.reduce(
-            (sum, opt) => sum + opt.count,
-            0,
-          );
-          this.handleResultsUpdated({
-            poll_id: data.poll_id as string,
-            question: this.activePoll?.question ?? "",
-            total_votes: totalVotes,
-            options,
-          });
+          const pollType = data.poll_type as string | undefined;
+          if (pollType === "rating" && this.ratingVm) {
+            this.ratingVm.updateResults(
+              data.results as RatingPollResults,
+            );
+          } else if (pollType === "open_text") {
+            // Open text results are loaded on demand, not pushed
+          } else {
+            if (!isRecord(data.results)) break;
+            const optionsData = (
+              data.results as Record<string, unknown>
+            ).options;
+            if (!Array.isArray(optionsData)) break;
+            const options = optionsData as PollResults["options"];
+            const totalVotes = options.reduce(
+              (sum, opt) => sum + opt.count,
+              0,
+            );
+            this.handleResultsUpdated({
+              poll_id: data.poll_id as string,
+              question: this.activePoll?.question ?? "",
+              total_votes: totalVotes,
+              options,
+            });
+          }
           break;
         }
       }
@@ -147,10 +192,31 @@ export class PollParticipationViewModel {
   }
 
   private handlePollActivated(poll: Poll): void {
+    this.ratingVm?.dispose();
+    this.openTextVm?.dispose();
+    this.ratingVm = null;
+    this.openTextVm = null;
+
+    if (poll.poll_type === "rating") {
+      this.ratingVm = new RatingPollViewModel(
+        this._api,
+        this._fingerprint,
+      );
+    } else if (poll.poll_type === "open_text") {
+      this.openTextVm = new OpenTextPollViewModel(
+        this._api,
+        this._fingerprint,
+      );
+    }
+
     this.resetPollState(poll);
   }
 
   private handlePollDeactivated(): void {
+    this.ratingVm?.dispose();
+    this.openTextVm?.dispose();
+    this.ratingVm = null;
+    this.openTextVm = null;
     this.resetPollState(null);
   }
 
@@ -161,6 +227,7 @@ export class PollParticipationViewModel {
   }
 
   dispose(): void {
-    /* WebSocket cleanup handled by parent */
+    this.ratingVm?.dispose();
+    this.openTextVm?.dispose();
   }
 }
