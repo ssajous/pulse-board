@@ -46,7 +46,7 @@ export const TopicCardContent = memo(function TopicCardContent({
           {isAnswered && (
             <div className="flex items-center gap-1 rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1 text-xs font-bold text-green-300">
               <CheckCircle size={12} />
-              Answered
+              <span className="participant-topic-answered-badge">Answered</span>
             </div>
           )}
           {isDanger && (
