@@ -247,6 +247,7 @@ export class HostDashboardViewModel {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onPollCreated(_poll: Poll): void {
     this.loadPolls();
   }
