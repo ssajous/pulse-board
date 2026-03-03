@@ -9,7 +9,7 @@ from typing import Any
 from pulse_board.domain.entities.event import Event, EventStatus
 from pulse_board.domain.entities.poll import Poll
 from pulse_board.domain.entities.poll_response import PollResponse
-from pulse_board.domain.entities.topic import Topic
+from pulse_board.domain.entities.topic import Topic, TopicStatus
 from pulse_board.domain.entities.vote import Vote
 from pulse_board.domain.ports.event_publisher_port import EventPublisher
 from pulse_board.domain.ports.event_repository_port import EventRepository
@@ -96,6 +96,29 @@ class FakeTopicRepository(TopicRepository):
         updated = dataclasses.replace(topic, score=topic.score + delta)
         self._topics[id] = updated
         return updated
+
+    def update_status(self, id: uuid.UUID, status: TopicStatus) -> Topic | None:
+        topic = self._topics.get(id)
+        if topic is None:
+            return None
+        updated = dataclasses.replace(topic, status=status)
+        self._topics[id] = updated
+        return updated
+
+    def count_by_event(self, event_id: uuid.UUID) -> int:
+        return sum(1 for t in self._topics.values() if t.event_id == event_id)
+
+    def count_by_event_and_status(
+        self, event_id: uuid.UUID, status: TopicStatus
+    ) -> int:
+        return sum(
+            1
+            for t in self._topics.values()
+            if t.event_id == event_id and t.status == status
+        )
+
+    def list_all_by_event(self, event_id: uuid.UUID) -> list[Topic]:
+        return [t for t in self._topics.values() if t.event_id == event_id]
 
 
 class FakeVoteRepository(VoteRepository):
@@ -274,6 +297,8 @@ class FakeEventPublisher(EventPublisher):
         self.channel_poll_activated: list[dict[str, Any]] = []
         self.channel_poll_deactivated: list[dict[str, Any]] = []
         self.channel_poll_results_updated: list[dict[str, Any]] = []
+        self.channel_topic_status_changed: list[dict[str, Any]] = []
+        self.channel_event_closed: list[dict[str, Any]] = []
 
     async def publish_score_update(
         self,
@@ -381,6 +406,18 @@ class FakeEventPublisher(EventPublisher):
                 "results": results,
             }
         )
+
+    async def publish_topic_status_changed_to_channel(
+        self, channel: str, topic_id: uuid.UUID, new_status: str
+    ) -> None:
+        self.channel_topic_status_changed.append(
+            {"channel": channel, "topic_id": topic_id, "new_status": new_status}
+        )
+
+    async def publish_event_closed_to_channel(
+        self, channel: str, event_id: uuid.UUID
+    ) -> None:
+        self.channel_event_closed.append({"channel": channel, "event_id": event_id})
 
 
 class FakeParticipantCounter(ParticipantCounter):

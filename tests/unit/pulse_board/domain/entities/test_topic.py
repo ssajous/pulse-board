@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from pulse_board.domain.entities.topic import MAX_CONTENT_LENGTH, Topic
+from pulse_board.domain.entities.topic import MAX_CONTENT_LENGTH, Topic, TopicStatus
 from pulse_board.domain.exceptions import ValidationError
 
 
@@ -95,6 +95,73 @@ class TestTopicCreate:
             Topic.create("")
 
         assert "empty" in exc_info.value.message.lower()
+
+
+class TestTopicStatus:
+    """Tests for TopicStatus enum and default status behavior."""
+
+    def test_create_default_status_is_active(self) -> None:
+        """New topics should default to ACTIVE status."""
+        topic = Topic.create("Status test")
+
+        assert topic.status == TopicStatus.ACTIVE
+
+    def test_status_active_value(self) -> None:
+        """TopicStatus.ACTIVE should have value 'active'."""
+        assert TopicStatus.ACTIVE.value == "active"
+
+    def test_status_highlighted_value(self) -> None:
+        """TopicStatus.HIGHLIGHTED should have value 'highlighted'."""
+        assert TopicStatus.HIGHLIGHTED.value == "highlighted"
+
+    def test_status_answered_value(self) -> None:
+        """TopicStatus.ANSWERED should have value 'answered'."""
+        assert TopicStatus.ANSWERED.value == "answered"
+
+    def test_status_archived_value(self) -> None:
+        """TopicStatus.ARCHIVED should have value 'archived'."""
+        assert TopicStatus.ARCHIVED.value == "archived"
+
+    def test_all_statuses_are_str_enum(self) -> None:
+        """All TopicStatus values should be string-comparable."""
+        assert str(TopicStatus.ACTIVE) == "active"
+        assert str(TopicStatus.HIGHLIGHTED) == "highlighted"
+        assert str(TopicStatus.ANSWERED) == "answered"
+        assert str(TopicStatus.ARCHIVED) == "archived"
+
+    def test_status_from_string(self) -> None:
+        """Should be able to construct TopicStatus from string value."""
+        assert TopicStatus("active") == TopicStatus.ACTIVE
+        assert TopicStatus("highlighted") == TopicStatus.HIGHLIGHTED
+        assert TopicStatus("answered") == TopicStatus.ANSWERED
+        assert TopicStatus("archived") == TopicStatus.ARCHIVED
+
+    def test_invalid_status_raises(self) -> None:
+        """Constructing TopicStatus from unknown string should raise ValueError."""
+        with pytest.raises(ValueError):
+            TopicStatus("unknown_status")
+
+    def test_topic_status_field_is_settable(self) -> None:
+        """Topic status field should be mutable (not frozen)."""
+        topic = Topic.create("Mutable status")
+        topic.status = TopicStatus.HIGHLIGHTED
+
+        assert topic.status == TopicStatus.HIGHLIGHTED
+
+    def test_direct_constructor_sets_default_status(self) -> None:
+        """Direct constructor should default status to ACTIVE."""
+        topic = Topic(
+            id=uuid.uuid4(),
+            content="direct",
+            score=0,
+            created_at=datetime.now(UTC),
+        )
+
+        assert topic.status == TopicStatus.ACTIVE
+
+    def test_four_valid_statuses_exist(self) -> None:
+        """TopicStatus enum should have exactly four members."""
+        assert len(TopicStatus) == 4
 
 
 class TestTopicSpecialCharacters:
