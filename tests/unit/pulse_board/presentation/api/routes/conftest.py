@@ -7,6 +7,9 @@ from pulse_board.application.use_cases.activate_poll import (
     ActivatePollUseCase,
 )
 from pulse_board.application.use_cases.cast_vote import CastVoteUseCase
+from pulse_board.application.use_cases.check_event_creator import (
+    CheckEventCreatorUseCase,
+)
 from pulse_board.application.use_cases.create_event import (
     CreateEventUseCase,
 )
@@ -36,6 +39,7 @@ from pulse_board.presentation.api.app import create_app
 from pulse_board.presentation.api.dependencies import (
     get_activate_poll_use_case,
     get_cast_vote_use_case,
+    get_check_event_creator_use_case,
     get_create_event_use_case,
     get_create_poll_use_case,
     get_create_topic_use_case,
@@ -127,6 +131,9 @@ def client(
         event_repository=fake_event_repo,
     )
     overrides[get_get_event_use_case] = lambda: GetEventUseCase(
+        event_repository=fake_event_repo,
+    )
+    overrides[get_check_event_creator_use_case] = lambda: CheckEventCreatorUseCase(
         event_repository=fake_event_repo,
     )
     overrides[get_list_event_topics_use_case] = lambda: ListEventTopicsUseCase(

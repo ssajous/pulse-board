@@ -8,6 +8,9 @@ from pulse_board.application.use_cases.activate_poll import (
 from pulse_board.application.use_cases.cast_vote import (
     CastVoteUseCase,
 )
+from pulse_board.application.use_cases.check_event_creator import (
+    CheckEventCreatorUseCase,
+)
 from pulse_board.application.use_cases.create_event import (
     CreateEventUseCase,
 )
@@ -119,6 +122,13 @@ def get_join_event_use_case() -> JoinEventUseCase:
 def get_get_event_use_case() -> GetEventUseCase:
     """Provide a GetEventUseCase instance."""
     return GetEventUseCase(
+        event_repository=_get_event_repository(),
+    )
+
+
+def get_check_event_creator_use_case() -> CheckEventCreatorUseCase:
+    """Provide a CheckEventCreatorUseCase instance."""
+    return CheckEventCreatorUseCase(
         event_repository=_get_event_repository(),
     )
 

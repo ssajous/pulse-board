@@ -140,3 +140,19 @@ class TestCreateEventUseCase:
 
         assert result.start_date is None
         assert result.end_date is None
+
+    def test_creates_event_with_creator_fingerprint(self) -> None:
+        """Should pass through creator_fingerprint to the result."""
+        repo = FakeEventRepository()
+        generator = JoinCodeGenerator()
+        use_case = CreateEventUseCase(
+            event_repository=repo,
+            code_generator=generator,
+        )
+
+        result = use_case.execute(
+            "FP Event",
+            creator_fingerprint="fp123",
+        )
+
+        assert result.creator_fingerprint == "fp123"

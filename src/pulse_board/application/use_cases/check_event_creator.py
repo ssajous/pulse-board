@@ -49,7 +49,6 @@ class CheckEventCreatorUseCase:
             raise EventNotFoundError(f"Event {event_id} not found")
 
         is_creator = (
-            event.creator_token is not None
-            and event.creator_token == creator_token
+            event.creator_token is not None and event.creator_token == creator_token
         )
         return CheckEventCreatorResult(is_creator=is_creator)
