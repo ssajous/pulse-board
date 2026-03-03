@@ -489,14 +489,13 @@ describe("HostDashboardViewModel", () => {
       await vm.loadDashboard("ABC123");
     });
 
-    it("adds the new poll to the polls array", () => {
+    it("reloads polls from the server", async () => {
       const newPoll = makePoll({ id: "poll-new" });
-      const pollsBefore = vm.polls.length;
 
       vm.onPollCreated(newPoll);
+      await flushMicrotasks();
 
-      expect(vm.polls.length).toBe(pollsBefore + 1);
-      expect(vm.polls.find((p) => p.id === "poll-new")).toBeDefined();
+      expect(pollApi.listPolls).toHaveBeenCalledTimes(2); // once on load, once on create
     });
   });
 

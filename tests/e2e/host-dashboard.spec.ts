@@ -116,10 +116,12 @@ test.describe("Host Dashboard", () => {
       event.creatorToken
     );
 
-    // Participant sees the "Answered" badge
+    // Participant sees the "Answered" badge.
+    // TopicCardContent.tsx renders the badge as inline text inside the topic
+    // card — there is no dedicated element id, so we assert on the card's text.
     await expect(
-      participantPage.locator(".participant-topic-answered-badge")
-    ).toBeVisible({ timeout: 10_000 });
+      participantPage.locator(`#topic-card-${topic.id}`)
+    ).toContainText("Answered", { timeout: 10_000 });
   });
 
   test("E2E-7.2: Host highlights topic, participant sees amber border", async ({

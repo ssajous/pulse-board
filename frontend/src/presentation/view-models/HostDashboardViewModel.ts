@@ -21,7 +21,6 @@ export class HostDashboardViewModel {
   stats: EventStats | null = null;
   isLoading = true;
   error: string | null = null;
-  isClosed = false;
   updatingTopicId: string | null = null;
   isClosingEvent = false;
   codeCopied = false;
@@ -32,6 +31,7 @@ export class HostDashboardViewModel {
   private readonly _pollApi: PollApiPort;
   private readonly _hostApi: HostApiPort;
   private readonly _ws: WebSocketPort | null;
+  private _copyTimerId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     eventApi: EventApiPort,
@@ -44,6 +44,10 @@ export class HostDashboardViewModel {
     this._hostApi = hostApi;
     this._ws = ws ?? null;
     makeAutoObservable(this, {}, { autoBind: true });
+  }
+
+  get isClosed(): boolean {
+    return this.event?.status === "closed";
   }
 
   get activeTopics(): Topic[] {
@@ -84,7 +88,6 @@ export class HostDashboardViewModel {
       const event = await this._eventApi.getEventByCode(code);
       runInAction(() => {
         this.event = event;
-        this.isClosed = event.status === "closed";
       });
 
       await Promise.all([
@@ -187,7 +190,9 @@ export class HostDashboardViewModel {
     try {
       await this._hostApi.closeEvent(this.event.id);
       runInAction(() => {
-        this.isClosed = true;
+        if (this.event) {
+          this.event = { ...this.event, status: "closed" };
+        }
         this.isClosingEvent = false;
       });
     } catch (e) {
@@ -204,7 +209,7 @@ export class HostDashboardViewModel {
       runInAction(() => {
         this.codeCopied = true;
       });
-      setTimeout(() => {
+      this._copyTimerId = setTimeout(() => {
         runInAction(() => {
           this.codeCopied = false;
         });
@@ -242,8 +247,7 @@ export class HostDashboardViewModel {
     }
   }
 
-  onPollCreated(poll: Poll): void {
-    this.polls = [...this.polls, poll];
+  onPollCreated(_poll: Poll): void {
     this.loadPolls();
   }
 
@@ -252,11 +256,13 @@ export class HostDashboardViewModel {
   }
 
   dispose(): void {
+    if (this._copyTimerId) {
+      clearTimeout(this._copyTimerId);
+    }
     this._ws?.disconnect();
   }
 
   private handleWebSocketMessage(data: unknown): void {
-    logger.log("HostDashboard WebSocket message:", data);
     if (!isRecord(data)) return;
 
     switch (data.type as string) {
@@ -273,7 +279,9 @@ export class HostDashboardViewModel {
         this.handleTopicStatusChanged(data);
         break;
       case "event_closed":
-        this.isClosed = true;
+        if (this.event) {
+          this.event = { ...this.event, status: "closed" };
+        }
         break;
       case "poll_activated":
       case "poll_deactivated":

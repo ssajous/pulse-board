@@ -1,4 +1,4 @@
-import type { Topic } from "@domain/entities/Topic";
+import type { Topic, TopicStatus } from "@domain/entities/Topic";
 import type { EventStats } from "@domain/entities/EventStats";
 import type {
   HostApiPort,
@@ -23,7 +23,7 @@ export class HostApiClient implements HostApiPort {
   async updateTopicStatus(
     eventId: string,
     topicId: string,
-    status: string,
+    status: TopicStatus,
   ): Promise<UpdateTopicStatusResponse> {
     const response = await fetch(
       `/api/events/${eventId}/topics/${topicId}/status`,
@@ -51,7 +51,7 @@ export class HostApiClient implements HostApiPort {
 
   async closeEvent(eventId: string): Promise<CloseEventResponse> {
     const response = await fetch(`/api/events/${eventId}/close`, {
-      method: "POST",
+      method: "PATCH",
       headers: this.headers,
     });
 
@@ -92,7 +92,7 @@ export class HostApiClient implements HostApiPort {
 
   async getAllTopics(eventId: string): Promise<Topic[]> {
     const response = await fetch(
-      `/api/events/${eventId}/topics/all`,
+      `/api/events/${eventId}/topics`,
       {
         headers: this.headers,
       },
@@ -110,6 +110,7 @@ export class HostApiClient implements HostApiPort {
       throw new Error("Failed to fetch topics");
     }
 
-    return response.json();
+    const data = (await response.json()) as { topics: Topic[] };
+    return data.topics;
   }
 }
