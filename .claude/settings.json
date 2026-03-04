@@ -8,6 +8,15 @@
     "mvvm-mobx-specialist@impel-claude-plugins": true,
     "python-expert@impel-claude-plugins": true,
     "frontend-design@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true
+    "code-simplifier@claude-plugins-official": true,
+    "quality-gate@project-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "project-plugins": {
+      "source": {
+        "source": "directory",
+        "path": ".claude/plugins/project-plugins"
+      }
+    }
   }
 }

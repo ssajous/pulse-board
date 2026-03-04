@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "project-plugins",
+  "description": "Project-level plugins for Pulse Board development",
+  "owner": {
+    "name": "Pulse Board Team"
+  },
+  "plugins": [
+    {
+      "name": "quality-gate",
+      "description": "Automated quality gate that runs linting, tests, and e2e checks with self-healing repair loops",
+      "version": "1.0.0",
+      "source": "./quality-gate",
+      "category": "development"
+    }
+  ]
+}
