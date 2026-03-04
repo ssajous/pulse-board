@@ -6,8 +6,8 @@ Pulse Board is a real-time community engagement platform that enables anonymous 
 
 The system serves two primary user roles:
 
-- **Event hosts** create events, author multiple-choice polls, and control poll activation/deactivation through an admin interface.
-- **Participants** join events by code, submit discussion topics, upvote or downvote topics, and respond to live polls.
+- **Event hosts** create events, author polls across multiple types (multiple choice, rating, open text, word cloud), control poll activation and deactivation, manage topic status (active, highlighted, answered, archived), and project a present mode view for display on a screen or projector. A host admin dashboard provides centralized control over topics, polls, and event lifecycle.
+- **Participants** join events by code, submit discussion topics, upvote or downvote topics, and respond to live polls in the format matching the active poll type.
 
 All interactions happen through a single-page application served by a FastAPI backend. The only external infrastructure dependency is a PostgreSQL 16 database. There are no third-party service integrations beyond the FingerprintJS client-side library, which runs entirely in the browser.
 
@@ -54,26 +54,31 @@ Both the backend and frontend follow **onion architecture** (clean architecture)
 src/pulse_board/
 +-- domain/                  # Inner layer: zero framework imports
 |   +-- entities/            # Topic, Vote, Event, Poll, PollResponse
-|   +-- services/            # VotingService (pure logic), JoinCodeGenerator
+|   +-- services/            # VotingService (pure logic), JoinCodeGenerator,
+|   |                        #   word_cloud_normalization
 |   +-- ports/               # ABCs: TopicRepository, VoteRepository,
 |   |                        #   EventRepository, PollRepository,
 |   |                        #   PollResponseRepository, EventPublisher,
-|   |                        #   DatabasePort
+|   |                        #   DatabasePort, ParticipantCounterPort
 |   +-- events.py            # Domain events (frozen dataclasses)
 |   +-- exceptions.py        # DomainError hierarchy
-|   +-- value_objects/       # (reserved for future value types)
+|   +-- value_objects/       # WordCloudResponse
 |
 +-- application/             # Use case orchestration
 |   +-- use_cases/           # CreateTopic, CastVote, CreateEvent,
 |   |                        #   JoinEvent, ListTopics, ListEventTopics,
 |   |                        #   GetEvent, CreatePoll, ActivatePoll,
 |   |                        #   SubmitPollResponse, GetPollResults,
-|   |                        #   HealthCheck
+|   |                        #   HealthCheck, CheckEventCreator,
+|   |                        #   CloseEvent, GetEventStats,
+|   |                        #   UpdateTopicStatus, GetPresentState
 |   +-- dtos/                # Data transfer objects
 |
 +-- infrastructure/          # Outer layer: framework and I/O
 |   +-- config/settings.py   # Pydantic-settings (env vars, .env file)
 |   +-- database/            # SQLAlchemy 2.0 engine, session, ORM models
+|   |                        #   (TopicModel, VoteModel, EventModel,
+|   |                        #    PollModel, PollResponseModel)
 |   +-- repositories/        # Concrete port implementations (SQL queries)
 |   +-- websocket/           # ConnectionManager (EventPublisher impl)
 |   +-- external/            # (reserved for third-party adapters)
@@ -82,7 +87,9 @@ src/pulse_board/
     +-- api/app.py           # Application factory (create_app)
     +-- api/routes/          # FastAPI routers: health, topics, votes,
     |                        #   events, polls, websocket, test_utils
-    +-- api/schemas/         # Pydantic request/response models
+    +-- api/schemas/         # Pydantic request/response models:
+    |                        #   health, topics, votes, events, polls,
+    |                        #   present_state
     +-- api/dependencies.py  # FastAPI dependency injection
     +-- api/exception_handlers.py  # Domain-to-HTTP error mapping
 ```
@@ -91,18 +98,23 @@ src/pulse_board/
 
 - Domain entities are plain Python dataclasses with factory classmethods (`create`) that enforce validation rules. Repositories reconstitute entities through the direct constructor, bypassing re-validation.
 - The `VotingService` is a pure domain service -- it takes an optional existing vote and a direction, then returns a discriminated union (`VoteCreated | VoteToggled | VoteCancelled`) describing the action. No I/O occurs inside the service.
+- The `word_cloud_normalization` service is a pure domain service that normalizes submitted word cloud responses (lowercasing, deduplication, and aggregation) so that word frequency counting is consistent regardless of participant casing or phrasing variations.
 - Port interfaces (ABCs) are defined in `domain/ports/`. Infrastructure provides concrete implementations. Use cases depend only on abstractions.
 - The `ConnectionManager` implements the `EventPublisher` port. It manages WebSocket connections, enforces per-IP and global connection limits, and broadcasts JSON messages to all clients or to channel-scoped subsets.
+- Topic status management is handled through the `UpdateTopicStatus` use case, which transitions topics through the `TopicStatus` lifecycle: `active`, `highlighted`, `answered`, and `archived`. Hosts use this to curate the visible topic list.
+- The `GetPresentState` use case aggregates event topics and the currently active poll into a single response used by the present mode view.
 
 ### Frontend (React / TypeScript)
 
 ```
 frontend/src/
 +-- domain/
-|   +-- entities/            # Topic, Vote, Event, Poll (TypeScript types)
+|   +-- entities/            # Topic, Vote, Event, Poll, PollResponse,
+|   |                        #   PresentState, EventStats (TypeScript types)
 |   +-- ports/               # Interfaces: TopicApiPort, VoteApiPort,
 |                            #   EventApiPort, PollApiPort,
-|                            #   FingerprintPort, WebSocketPort
+|                            #   FingerprintPort, WebSocketPort,
+|                            #   PresentStateApiPort, HostApiPort
 |
 +-- application/
 |   +-- use-cases/           # Pure functions (computeScoreDelta, etc.)
@@ -110,23 +122,45 @@ frontend/src/
 +-- infrastructure/
 |   +-- api/                 # HTTP clients: topicApiClient, voteApiClient,
 |   |                        #   eventApiClient, eventTopicApiClient,
-|   |                        #   pollApiClient
+|   |                        #   pollApiClient, presentStateApiClient,
+|   |                        #   hostApiClient
 |   +-- fingerprint/         # FingerprintJS v5 adapter
-|   +-- websocket/           # WebSocket client
+|   +-- websocket/           # WebSocket client, buildWebSocketUrl
 |   +-- logger.ts            # Structured logging
 |
 +-- presentation/
-    +-- components/          # React components (thin, observer-wrapped)
-    +-- pages/               # Route-level page components
-    +-- view-models/         # MobX ViewModels (MVVM pattern)
+    +-- components/          # React components (thin, observer-wrapped),
+    |                        #   organized by feature:
+    |                        #   topic-card, topic-form, topic-list,
+    |                        #   event-board-header, event-creation-form,
+    |                        #   event-join-form, landing-actions,
+    |                        #   poll-creation-form, poll-participation,
+    |                        #   poll-results, present-mode,
+    |                        #   host-dashboard, events, layout, toast,
+    |                        #   polls/ (word-cloud, rating, open-text
+    |                        #   participation and results sub-types)
+    +-- pages/               # BoardPage, EventBoardPage,
+    |                        #   EventCreationPage, EventJoinPage
+    +-- view-models/         # MobX ViewModels:
+    |                        #   TopicsViewModel, EventBoardViewModel,
+    |                        #   EventCreationViewModel, EventJoinViewModel,
+    |                        #   PollCreationViewModel,
+    |                        #   PollParticipationViewModel,
+    |                        #   PollResultsViewModel, PresentModeViewModel,
+    |                        #   HostDashboardViewModel, EventAdminViewModel,
+    |                        #   OpenTextPollViewModel, RatingPollViewModel,
+    |                        #   WordCloudViewModel
     +-- hooks/               # React hooks
 ```
 
 **Key design points:**
 
 - Components are intentionally "dumb" -- they observe ViewModel state via `mobx-react-lite` and delegate all logic and side effects to ViewModels.
-- ViewModels use MobX observables, computed properties, and actions. Computed properties derive display state (loading flags, sorted lists, percentages) from core state, so the UI automatically reacts to state changes.
+- ViewModels use MobX observables, computed properties, and actions. Computed properties derive display state (loading flags, sorted lists, percentages, word frequency maps) from core state, so the UI automatically reacts to state changes.
 - Port interfaces in `domain/ports/` define contracts for API calls, fingerprint generation, and WebSocket communication. Infrastructure modules implement these contracts.
+- The `HostDashboardViewModel` and `EventAdminViewModel` separate host-specific concerns from participant view models. The host admin pattern gives the event host full control over topic archival, poll management, and event closure without coupling those concerns to participant-facing ViewModels.
+- Present mode is served by `PresentModeViewModel`, which polls the `GetPresentState` endpoint and maintains synchronized state for projector display. Poll results and the topic feed update reactively as participants interact.
+- Poll-type-specific ViewModels (`RatingPollViewModel`, `OpenTextPollViewModel`, `WordCloudViewModel`) encapsulate the distinct interaction and results logic for each poll type, keeping the shared `PollParticipationViewModel` free of type-specific branching.
 
 ## Data Architecture
 
@@ -168,13 +202,18 @@ PostgreSQL 16 stores all persistent state across five tables. Alembic manages sc
 - `poll_responses` enforces a unique constraint on `(poll_id, fingerprint_id)` to prevent duplicate votes per participant per poll.
 - Topics optionally belong to an event (`event_id` is nullable). Standalone topics support the global board mode.
 - Poll options are stored as JSONB within the `polls` table, keeping the schema simple while supporting variable option counts (2--10).
+- The `poll_type` column in `polls` accepts four values: `multiple_choice`, `rating`, `open_text`, and `word_cloud`. Each type drives different participation UI and results presentation.
+- The `response_data` column in `poll_responses` stores structured JSONB that varies by poll type: multiple choice stores a selected option ID, rating stores an integer value (1--5), open text stores a free-form string, and word cloud stores an array of submitted words. The `option_id` column is populated only for multiple choice responses; other poll types leave it null and use `response_data` exclusively.
 
 ### Data Flow
 
 1. **Topic submission**: Browser sends POST to `/api/events/{code}/topics` with content and fingerprint. The `CreateTopic` use case validates, persists, and publishes a `new_topic` WebSocket event.
 2. **Voting**: Browser sends POST to `/api/votes` with topic ID, fingerprint, and direction. The `CastVote` use case delegates to `VotingService`, which returns a `VoteAction`. The use case persists the result, updates the topic score, and broadcasts `score_update`. If the score crosses the censure threshold (-5), a `topic_censured` event is broadcast.
-3. **Poll lifecycle**: Host creates a poll (POST `/api/events/{id}/polls`), activates it (PATCH `/api/polls/{id}/activate`), participants respond (POST `/api/polls/{id}/responses`), and results stream via `poll_results_updated` WebSocket events. Deactivation stops accepting responses.
-4. **Real-time delivery**: The `ConnectionManager` broadcasts JSON messages over WebSocket connections. Global broadcasts reach `/ws`; event-scoped broadcasts reach `/ws/events/{code}` via channel routing keyed as `event:{code}`.
+3. **Event lifecycle**: A host creates an event (POST `/api/events`) and receives both a public join code and a private creator token. Participants join by submitting the join code (POST `/api/events/join`). The host uses the creator token to access the host admin interface. The host closes the event (POST `/api/events/{id}/close`) when the session ends, at which point new topic submissions and poll responses are rejected.
+4. **Poll lifecycle**: Host creates a poll specifying a `poll_type` of `multiple_choice`, `rating`, `open_text`, or `word_cloud` (POST `/api/events/{id}/polls`). Host activates the poll (PATCH `/api/polls/{id}/activate`). Participants submit responses in the format matching the poll type (POST `/api/polls/{id}/responses`). Results stream in real time via `poll_results_updated` WebSocket events. Deactivation stops accepting responses. Word cloud responses are normalized before storage using the `word_cloud_normalization` domain service.
+5. **Present mode**: The host navigates to the present mode URL, which triggers the `PresentModeViewModel` to fetch present state (GET `/api/events/{code}/present`). The `GetPresentState` use case returns the current active poll and the full topic list. The present view polls for updates at a configured interval, keeping the projected display synchronized with the live session without requiring a dedicated WebSocket channel.
+6. **Host admin**: The host accesses the admin dashboard using the creator token. `HostDashboardViewModel` loads event stats and the topic list. The host transitions topic status through the `UpdateTopicStatus` use case, manages which polls are active, and can close the event. All host actions are validated against the creator token server-side through the `CheckEventCreator` use case.
+7. **Real-time delivery**: The `ConnectionManager` broadcasts JSON messages over WebSocket connections. Global broadcasts reach `/ws`; event-scoped broadcasts reach `/ws/events/{code}` via channel routing keyed as `event:{code}`.
 
 ## Deployment Architecture
 
@@ -263,6 +302,8 @@ Domain exceptions form a typed hierarchy rooted at `DomainError`. The presentati
 | `DuplicateResponseError` | 409 | Poll response already submitted |
 | `PollNotActiveError` | 409 | Poll is not accepting responses |
 | `InvalidPollOptionError` | 422 | Option ID not in poll |
+| `TopicNotFoundError` | 404 | Topic does not exist |
+| `CreatorTokenInvalidError` | 403 | Host creator token is invalid or missing |
 | `CodeGenerationError` | 500 | Join code generation failed |
 
 All 5xx errors are logged with full tracebacks. Client-facing error responses use a consistent `{"detail": "..."}` JSON format.
