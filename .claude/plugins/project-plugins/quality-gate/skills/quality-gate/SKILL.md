@@ -43,14 +43,20 @@ for each check in [lint, test, test-all, test-e2e]:
 When a check fails:
 
 1. **Diagnose** - Launch the `root-cause-analyst` agent to analyze the failure output and identify the true root cause
-2. **Fix** - Use the appropriate sub-agent to implement the repair:
+2. **Navigate** - Use LSP to understand the failing code before making changes:
+   - `goToDefinition` to inspect the source of failing symbols
+   - `findReferences` to assess impact before modifying any signature or type
+   - `hover` to verify types at error locations
+   - `incomingCalls`/`outgoingCalls` to trace call graphs when failures span multiple files
+   - `documentSymbol` to understand file structure before editing
+3. **Fix** - Use the appropriate sub-agent to implement the repair:
    - Lint/format issues: Fix directly or use `python-expert` agent for Python, handle frontend ESLint issues directly
    - Python test failures: Use `python-expert` agent
    - Frontend test failures: Fix directly with knowledge of React/TypeScript/Vitest patterns
    - E2E test failures: Fix directly with knowledge of Playwright patterns
    - Architecture issues: Use `system-architect` agent for design-level problems
    - If a referenced agent is unavailable, perform the diagnosis or repair directly without delegation
-3. **Re-run from start** - After any repair, restart the entire check sequence from `make lint`. Do not skip ahead.
+4. **Re-run from start** - After any repair, restart the entire check sequence from `make lint`. Do not skip ahead.
 
 ### Phase 3: Clean Pass Verification
 

@@ -7,6 +7,7 @@ allowed-tools:
   - Write
   - Grep
   - Glob
+  - LSP
   - Agent
   - Skill
 ---
