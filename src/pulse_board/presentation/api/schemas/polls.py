@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CreatePollRequest(BaseModel):
@@ -132,6 +132,15 @@ class SubmitPollResponseRequest(BaseModel):
             "(open_text polls), or 1-3 word phrase (word_cloud polls)"
         ),
     )
+
+    @field_validator("response_value")
+    @classmethod
+    def limit_string_length(cls, v: int | str | None) -> int | str | None:
+        """Reject oversized string payloads at the API boundary."""
+        if isinstance(v, str) and len(v) > 500:
+            msg = "response_value must be 500 characters or fewer"
+            raise ValueError(msg)
+        return v
 
     model_config = {
         "json_schema_extra": {
