@@ -1,0 +1,8 @@
+{
+  "name": "quality-gate",
+  "version": "1.0.0",
+  "description": "Automated quality gate that runs linting, tests, and e2e checks with self-healing repair loops",
+  "author": {
+    "name": "Stan Sajous"
+  }
+}
