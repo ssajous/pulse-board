@@ -368,4 +368,4 @@ Common fixes:
 - **[Deployment Guide](deployment.md)** -- Build and deploy Pulse Board with Docker.
 - **[Testing Strategy](../testing/testing-strategy.md)** -- Understand the testing philosophy and coverage goals.
 - **[Test Conventions](../testing/test-conventions.md)** -- Follow naming patterns and checklists when adding tests.
-- **[Architecture Decision Records](../adr/)** -- Review design decisions for the technology stack and patterns.
+- **[Architecture Decision Records](../architecture/decisions/)** -- Review design decisions for the technology stack and patterns.

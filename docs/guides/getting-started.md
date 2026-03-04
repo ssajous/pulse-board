@@ -6,7 +6,7 @@ This tutorial walks you through setting up and running Pulse Board on your local
 
 ## What You Will Build
 
-Pulse Board is a real-time community engagement platform. Community members submit topics anonymously, vote them up or down, and watch scores update live across every connected browser. Topics that accumulate too many downvotes are automatically censured and removed from the board.
+Pulse Board is a real-time community engagement platform. Community members submit topics anonymously, vote them up or down, and watch scores update live across every connected browser. Topics that accumulate too many downvotes are automatically censured and removed from the board. Hosts can also run interactive polls during sessions, collecting responses in real-time and projecting results in a dedicated present mode.
 
 In this tutorial, you will:
 
@@ -14,6 +14,7 @@ In this tutorial, you will:
 2. Start the entire stack with a single command
 3. Verify the backend, frontend, and database are running
 4. Create a topic, cast votes, and observe real-time updates
+5. Create an event, join it from a second tab, run a poll, and use present mode
 
 ## Prerequisites
 
@@ -118,6 +119,45 @@ Now that the application is running, exercise its core features.
 
 This live synchronization is powered by WebSocket connections between every connected browser and the backend.
 
+### Create an Event
+
+1. Open [http://localhost:5173](http://localhost:5173) in your browser.
+2. Click "Create Event" and fill in a title and description for your session.
+3. Submit the form. A confirmation page appears displaying a join code.
+4. Copy the join code -- you will share it with participants so they can join the event.
+
+### Join an Event
+
+1. Open a second browser tab to [http://localhost:5173](http://localhost:5173).
+2. Click "Join Event" and enter the join code from the previous step.
+3. You are now on the event board. From this tab you can submit topics and cast votes, just as in the basic workflow above.
+
+Participants on separate devices follow the same join flow -- give them the join code and they are immediately connected to the live session.
+
+### Create and Run a Poll
+
+1. In the host tab, click the admin link to open the host dashboard for your event.
+2. Click "Create Poll" and choose a poll type:
+   - **Multiple choice** -- participants select one or more predefined options
+   - **Rating** -- participants submit a numeric rating
+   - **Open text** -- participants type a free-form response
+   - **Word cloud** -- participants submit words that are aggregated into a visual word cloud
+3. Fill in the poll question and any required options, then save.
+4. Click "Activate" to make the poll visible to participants.
+5. In the participant tabs, the active poll appears and participants can submit their responses.
+6. Watch the results panel in the host dashboard -- responses appear in real-time as participants submit them.
+
+To stop accepting responses, deactivate the poll from the host dashboard. You can create and activate multiple polls during a single event session.
+
+### Use Present Mode
+
+1. From the event admin page, click "Present" to open the present mode view in a new tab.
+2. The present mode view displays:
+   - A QR code that participants can scan to join the event directly
+   - Live poll results for any currently active poll
+   - A scrolling feed of submitted topics
+3. This view is optimized for projection on a large screen during a meeting or live event. It updates automatically as polls are activated and topics are submitted.
+
 ## Stopping the Application
 
 Press `Ctrl+C` in the terminal where `make dev` is running. This stops the backend, frontend, and the PostgreSQL container.
@@ -139,4 +179,4 @@ make clean
 - **[Development Setup Guide](development-setup.md)** -- Set up a full development environment with individual service control, testing, linting, and code quality tools.
 - **[Deployment Guide](deployment.md)** -- Build and deploy Pulse Board with Docker for production use.
 - **[API Documentation](http://localhost:8000/docs)** -- Explore the full API via the interactive Swagger UI (requires a running backend).
-- **[Architecture Decision Records](../adr/)** -- Understand the design decisions behind the technology stack and architecture.
+- **[Architecture Decision Records](../architecture/decisions/)** -- Understand the design decisions behind the technology stack and architecture.

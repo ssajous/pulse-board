@@ -279,4 +279,4 @@ docker compose -f docker-compose.prod.yml down -v
 
 - **[Development Setup](development-setup.md)** -- Configure a local development environment with hot reload and testing.
 - **[Getting Started](getting-started.md)** -- Quick tutorial for first-time users.
-- **[Architecture Decision Records](../adr/)** -- Review design decisions including the Docker and deployment strategy.
+- **[Architecture Decision Records](../architecture/decisions/)** -- Review design decisions including the Docker and deployment strategy.
