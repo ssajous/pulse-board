@@ -64,7 +64,20 @@ export interface OpenTextPollResults {
   readonly total_pages: number;
 }
 
+export interface WordFrequency {
+  readonly text: string;
+  readonly count: number;
+}
+
+export interface WordCloudPollResults {
+  readonly poll_id: string;
+  readonly question: string;
+  readonly total_responses: number;
+  readonly frequencies: WordFrequency[];
+}
+
 export type AnyPollResults =
   | PollResults
   | RatingPollResults
-  | OpenTextPollResults;
+  | OpenTextPollResults
+  | WordCloudPollResults;

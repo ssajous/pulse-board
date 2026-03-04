@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from pulse_board.domain.exceptions import ValidationError
+from pulse_board.domain.value_objects.word_cloud_response import WordCloudResponse
 
 MIN_RATING = 1
 MAX_RATING = 5
@@ -125,6 +126,39 @@ class PollResponse:
             fingerprint_id=fingerprint_id,
             option_id=None,
             response_data={"text": stripped},
+            created_at=datetime.now(UTC),
+        )
+
+    @classmethod
+    def create_word_cloud(
+        cls,
+        poll_id: uuid.UUID,
+        fingerprint_id: str,
+        text: str,
+    ) -> "PollResponse":
+        """Create a new word cloud PollResponse.
+
+        Args:
+            poll_id: The UUID of the poll being answered.
+            fingerprint_id: Identifier for the respondent.
+            text: The word cloud submission (1-3 words, max 30 chars
+                after normalization).
+
+        Returns:
+            A new PollResponse with option_id=None and
+            response_data containing the normalized text and fingerprint.
+
+        Raises:
+            ValidationError: If text is empty, exceeds 30 characters,
+                or contains more than 3 words.
+        """
+        validated = WordCloudResponse.create(text)
+        return cls(
+            id=uuid.uuid4(),
+            poll_id=poll_id,
+            fingerprint_id=fingerprint_id,
+            option_id=None,
+            response_data={"text": validated.text},
             created_at=datetime.now(UTC),
         )
 

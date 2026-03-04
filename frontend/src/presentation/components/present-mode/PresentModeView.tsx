@@ -4,6 +4,7 @@ import { usePresentModeViewModel } from "@presentation/view-models/PresentModeVi
 import { PresentHeader } from "./PresentHeader";
 import { PresentPollResults } from "./PresentPollResults";
 import { PresentTopicFeed } from "./PresentTopicFeed";
+import { WordCloudPresentView } from "@presentation/components/polls/word-cloud-present-view";
 
 const JOIN_BASE_URL = window.location.origin;
 
@@ -76,12 +77,16 @@ export const PresentModeView = observer(() => {
       />
       <div className="flex flex-1 overflow-hidden">
         <section className="flex w-1/2 flex-col overflow-y-auto border-r border-current/10 p-8">
-          {vm.activePoll ? (
-            <PresentPollResults poll={vm.activePoll} />
-          ) : (
+          {!vm.activePoll && (
             <div className="flex h-full items-center justify-center">
               <p className="text-xl opacity-50">No active poll</p>
             </div>
+          )}
+          {vm.activePoll?.poll_type === "word_cloud" && (
+            <WordCloudPresentView poll={vm.activePoll} />
+          )}
+          {vm.activePoll && vm.activePoll.poll_type !== "word_cloud" && (
+            <PresentPollResults poll={vm.activePoll} />
           )}
         </section>
         <section className="flex w-1/2 flex-col overflow-y-auto p-8">

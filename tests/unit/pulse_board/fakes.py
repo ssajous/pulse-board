@@ -283,6 +283,23 @@ class FakePollResponseRepository(PollResponseRepository):
         page_items = matching[offset : offset + page_size]
         return page_items, total
 
+    def get_word_cloud_frequencies(
+        self,
+        poll_id: uuid.UUID,
+        limit: int = 50,
+    ) -> list[tuple[str, int]]:
+        """Return word frequencies for a word cloud poll."""
+        freq: dict[str, int] = {}
+        for response in self._responses.values():
+            if response.poll_id == poll_id and "text" in response.response_data:
+                text = str(response.response_data["text"])
+                freq[text] = freq.get(text, 0) + 1
+        sorted_items = sorted(
+            freq.items(),
+            key=lambda x: (-x[1], x[0]),
+        )
+        return sorted_items[:limit]
+
 
 class FakeEventPublisher(EventPublisher):
     """In-memory event publisher that records published events for assertions."""

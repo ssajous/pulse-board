@@ -120,6 +120,14 @@ class SubmitPollResponseUseCase:
                 fingerprint_id=fingerprint_id,
                 text=str(response_value),
             )
+        elif poll.poll_type == "word_cloud":
+            if response_value is None:
+                raise ValidationError("response_value is required for word cloud polls")
+            response = PollResponse.create_word_cloud(
+                poll_id=poll_id,
+                fingerprint_id=fingerprint_id,
+                text=str(response_value),
+            )
         else:
             if option_id is None:
                 raise ValidationError("option_id is required for multiple choice polls")

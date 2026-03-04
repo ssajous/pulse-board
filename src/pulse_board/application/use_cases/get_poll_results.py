@@ -103,6 +103,36 @@ class OpenTextPollResultsResult:
     total_pages: int
 
 
+@dataclass(frozen=True)
+class WordFrequencyDTO:
+    """A single word frequency entry.
+
+    Attributes:
+        text: The normalized word or phrase.
+        count: Number of times submitted.
+    """
+
+    text: str
+    count: int
+
+
+@dataclass(frozen=True)
+class WordCloudPollResultsResult:
+    """Aggregated results for a word cloud poll.
+
+    Attributes:
+        poll_id: The UUID of the poll.
+        question: The poll question text.
+        total_responses: Total number of submissions.
+        words: Word frequency list, sorted by count descending.
+    """
+
+    poll_id: uuid.UUID
+    question: str
+    total_responses: int
+    words: list[WordFrequencyDTO]
+
+
 class GetPollResultsUseCase:
     """Use case for retrieving aggregated poll results.
 
@@ -110,6 +140,7 @@ class GetPollResultsUseCase:
     - ``multiple_choice``: ``PollResultsResult``
     - ``rating``: ``RatingPollResultsResult``
     - ``open_text``: ``OpenTextPollResultsResult``
+    - ``word_cloud``: ``WordCloudPollResultsResult``
     """
 
     def __init__(
@@ -125,7 +156,12 @@ class GetPollResultsUseCase:
         poll_id: uuid.UUID,
         page: int = 1,
         page_size: int = 20,
-    ) -> PollResultsResult | RatingPollResultsResult | OpenTextPollResultsResult:
+    ) -> (
+        PollResultsResult
+        | RatingPollResultsResult
+        | OpenTextPollResultsResult
+        | WordCloudPollResultsResult
+    ):
         """Get aggregated results for a poll.
 
         Args:
@@ -148,6 +184,9 @@ class GetPollResultsUseCase:
         if poll.poll_type == "rating":
             return self._build_rating_results(poll_id, poll.question)
 
+        if poll.poll_type == "word_cloud":
+            return self._build_word_cloud_results(poll_id, poll.question)
+
         if poll.poll_type == "open_text":
             return self._build_open_text_results(
                 poll_id, poll.question, page, page_size
@@ -169,6 +208,24 @@ class GetPollResultsUseCase:
             total_votes=total,
             average_rating=avg,
             distribution=distribution,
+        )
+
+    def _build_word_cloud_results(
+        self,
+        poll_id: uuid.UUID,
+        question: str,
+    ) -> WordCloudPollResultsResult:
+        """Build word cloud results from frequency aggregation."""
+        frequencies = self._poll_response_repo.get_word_cloud_frequencies(poll_id)
+        words = [
+            WordFrequencyDTO(text=text, count=count) for text, count in frequencies
+        ]
+        total = sum(w.count for w in words)
+        return WordCloudPollResultsResult(
+            poll_id=poll_id,
+            question=question,
+            total_responses=total,
+            words=words,
         )
 
     def _build_open_text_results(

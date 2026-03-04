@@ -1,10 +1,13 @@
-import type { PollOptionResult } from "./Poll";
+import type { PollOptionResult, PollType, WordFrequency } from "./Poll";
 
 export interface PresentActivePoll {
   readonly poll_id: string;
   readonly question: string;
   readonly total_votes: number;
   readonly options: PollOptionResult[];
+  readonly poll_type?: PollType;
+  readonly frequencies?: WordFrequency[];
+  readonly total_responses?: number;
 }
 
 export interface PresentTopic {

@@ -312,3 +312,76 @@ export async function closeEventViaApi(
 
   return response.json() as Promise<CloseEventApiResponse>;
 }
+
+export interface WordFrequency {
+  text: string;
+  count: number;
+}
+
+export interface WordCloudPollResultsResponse {
+  poll_id: string;
+  question: string;
+  total_responses: number;
+  words: WordFrequency[];
+}
+
+export async function createWordCloudPollViaApi(
+  eventId: string,
+  question: string
+): Promise<PollResponse> {
+  const response = await fetch(`${API_BASE}/events/${eventId}/polls`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, poll_type: "word_cloud", options: [] }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to create word cloud poll: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<PollResponse>;
+}
+
+export async function submitWordCloudResponseViaApi(
+  pollId: string,
+  fingerprintId: string,
+  responseValue: string
+): Promise<{ id: string; poll_id: string; option_id: null; created_at: string }> {
+  const response = await fetch(`${API_BASE}/polls/${pollId}/respond`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fingerprint_id: fingerprintId,
+      response_value: responseValue,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to submit word cloud response: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<{
+    id: string;
+    poll_id: string;
+    option_id: null;
+    created_at: string;
+  }>;
+}
+
+export async function getWordCloudResultsViaApi(
+  pollId: string
+): Promise<WordCloudPollResultsResponse> {
+  const response = await fetch(`${API_BASE}/polls/${pollId}/results`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to get word cloud results: ${response.status} ${response.statusText}`
+    );
+  }
+
+  return response.json() as Promise<WordCloudPollResultsResponse>;
+}

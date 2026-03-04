@@ -137,6 +137,34 @@ class SQLAlchemyPollResponseRepository(PollResponseRepository):
             avg = round(total_rating / total, 2)
             return avg, distribution
 
+    def get_word_cloud_frequencies(
+        self,
+        poll_id: uuid.UUID,
+        limit: int = 50,
+    ) -> list[tuple[str, int]]:
+        """Return word frequencies for a word cloud poll.
+
+        Args:
+            poll_id: The UUID of the poll.
+            limit: Maximum number of unique words to return.
+
+        Returns:
+            A list of (text, count) tuples sorted by count descending,
+            then by text ascending.
+        """
+        with self._session_factory() as session:
+            text_expr = PollResponseModel.response_data["text"].astext
+            rows = (
+                session.query(text_expr, func.count())
+                .filter(PollResponseModel.poll_id == poll_id)
+                .filter(PollResponseModel.response_data.has_key("text"))  # type: ignore[attr-defined]
+                .group_by(text_expr)
+                .order_by(func.count().desc(), text_expr.asc())
+                .limit(limit)
+                .all()
+            )
+            return [(str(text), int(count)) for text, count in rows]
+
     def list_open_text_by_poll(
         self,
         poll_id: uuid.UUID,

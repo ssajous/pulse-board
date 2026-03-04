@@ -130,3 +130,22 @@ class PollResponseRepository(ABC):
             ordered newest first.
         """
         ...
+
+    @abstractmethod
+    def get_word_cloud_frequencies(
+        self,
+        poll_id: uuid.UUID,
+        limit: int = 50,
+    ) -> list[tuple[str, int]]:
+        """Return word frequency data for a word cloud poll.
+
+        Args:
+            poll_id: The UUID of the poll.
+            limit: Maximum number of distinct terms to return.
+                Defaults to 50.
+
+        Returns:
+            A list of (normalized_text, count) tuples ordered by
+            count descending, then text ascending.
+        """
+        ...

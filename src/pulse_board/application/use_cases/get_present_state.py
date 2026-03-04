@@ -9,6 +9,7 @@ from pulse_board.application.use_cases.get_poll_results import (
     OpenTextPollResultsResult,
     PollOptionResult,
     RatingPollResultsResult,
+    WordCloudPollResultsResult,
 )
 from pulse_board.domain.exceptions import EventNotFoundError
 from pulse_board.domain.ports.event_repository_port import EventRepository
@@ -98,7 +99,10 @@ class GetPresentStateUseCase:
             if isinstance(results, RatingPollResultsResult):
                 total_votes = results.total_votes
                 options: list[PollOptionResult] = []
-            elif isinstance(results, OpenTextPollResultsResult):
+            elif isinstance(
+                results,
+                (OpenTextPollResultsResult, WordCloudPollResultsResult),
+            ):
                 total_votes = results.total_responses
                 options = []
             else:

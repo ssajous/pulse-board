@@ -568,6 +568,143 @@ describe("PollParticipationViewModel", () => {
     });
   });
 
+  describe("wordCloudVm lifecycle", () => {
+    it("creates wordCloudVm when poll_type is 'word_cloud'", async () => {
+      const wordCloudPoll = makePoll({ poll_type: "word_cloud" });
+      (api.getActivePoll as ReturnType<typeof vi.fn>).mockResolvedValue(
+        wordCloudPoll,
+      );
+
+      await vm.loadActivePoll("event-1");
+
+      expect(vm.wordCloudVm).not.toBeNull();
+    });
+
+    it("wordCloudVm is null for 'multiple_choice' poll type", async () => {
+      await vm.loadActivePoll("event-1"); // returns multiple_choice by default
+
+      expect(vm.wordCloudVm).toBeNull();
+    });
+
+    it("wordCloudVm is null for 'rating' poll type", async () => {
+      const ratingPoll = makePoll({ poll_type: "rating" });
+      (api.getActivePoll as ReturnType<typeof vi.fn>).mockResolvedValue(
+        ratingPoll,
+      );
+
+      await vm.loadActivePoll("event-1");
+
+      expect(vm.wordCloudVm).toBeNull();
+    });
+
+    it("wordCloudVm is null for 'open_text' poll type", async () => {
+      const openTextPoll = makePoll({ poll_type: "open_text" });
+      (api.getActivePoll as ReturnType<typeof vi.fn>).mockResolvedValue(
+        openTextPoll,
+      );
+
+      await vm.loadActivePoll("event-1");
+
+      expect(vm.wordCloudVm).toBeNull();
+    });
+
+    it("creates wordCloudVm via WebSocket poll_activated with poll_type word_cloud", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      expect(vm.wordCloudVm).not.toBeNull();
+    });
+
+    it("disposes wordCloudVm when poll is deactivated", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      expect(vm.wordCloudVm).not.toBeNull();
+
+      wsResult.messageHandler.current!({ type: "poll_deactivated" });
+
+      expect(vm.wordCloudVm).toBeNull();
+    });
+
+    it("disposes existing wordCloudVm when a new poll activates", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll-1",
+        question: "First word poll",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      const firstVm = vm.wordCloudVm;
+      expect(firstVm).not.toBeNull();
+
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "mc-poll",
+        question: "Multiple choice?",
+        poll_type: "multiple_choice",
+        options: [{ id: "opt-1", text: "Option A" }],
+      });
+
+      expect(vm.wordCloudVm).toBeNull();
+    });
+
+    it("calls wordCloudVm.handleWordCloudUpdated on poll_results_updated for word_cloud type", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      const wordCloudVm = vm.wordCloudVm!;
+      expect(wordCloudVm).not.toBeNull();
+
+      const words = [
+        { text: "apple", count: 5 },
+        { text: "banana", count: 3 },
+      ];
+
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "wc-poll",
+        poll_type: "word_cloud",
+        results: { total_responses: 8, words },
+      });
+
+      expect(wordCloudVm.frequencies).toEqual(words);
+      expect(wordCloudVm.totalResponses).toBe(8);
+    });
+
+    it("does not call wordCloudVm.handleWordCloudUpdated when wordCloudVm is null", async () => {
+      // Default poll is multiple_choice, so wordCloudVm is null
+      await vm.loadActivePoll("event-1");
+
+      expect(vm.wordCloudVm).toBeNull();
+
+      // This should not throw even without a wordCloudVm
+      expect(() => {
+        wsResult.messageHandler.current!({
+          type: "poll_results_updated",
+          poll_id: "poll-1",
+          poll_type: "word_cloud",
+          results: { total_responses: 5, words: [{ text: "test", count: 5 }] },
+        });
+      }).not.toThrow();
+    });
+  });
+
   describe("WebSocket message validation", () => {
     it("ignores malformed messages", async () => {
       await vm.loadActivePoll("event-1");

@@ -4,6 +4,7 @@ import type {
   PollResults,
   PollType,
   RatingPollResults,
+  WordFrequency,
 } from "@domain/entities/Poll";
 import type { PollApiPort } from "@domain/ports/PollApiPort";
 import type { WebSocketPort } from "@domain/ports/WebSocketPort";
@@ -12,6 +13,7 @@ import { logger } from "@infrastructure/logger";
 import { isRecord } from "@infrastructure/utils/typeGuards";
 import { RatingPollViewModel } from "./RatingPollViewModel";
 import { OpenTextPollViewModel } from "./OpenTextPollViewModel";
+import { WordCloudViewModel } from "./WordCloudViewModel";
 
 export class PollParticipationViewModel {
   activePoll: Poll | null = null;
@@ -22,6 +24,7 @@ export class PollParticipationViewModel {
   results: PollResults | null = null;
   ratingVm: RatingPollViewModel | null = null;
   openTextVm: OpenTextPollViewModel | null = null;
+  wordCloudVm: WordCloudViewModel | null = null;
 
   private readonly _api: PollApiPort;
   private readonly _ws: WebSocketPort;
@@ -108,11 +111,17 @@ export class PollParticipationViewModel {
     }
   }
 
-  private initSubVm(poll: Poll): void {
+  private disposeAllSubVms(): void {
     this.ratingVm?.dispose();
     this.openTextVm?.dispose();
+    this.wordCloudVm?.dispose();
     this.ratingVm = null;
     this.openTextVm = null;
+    this.wordCloudVm = null;
+  }
+
+  private initSubVm(poll: Poll): void {
+    this.disposeAllSubVms();
 
     if (poll.poll_type === "rating") {
       this.ratingVm = new RatingPollViewModel(
@@ -121,6 +130,11 @@ export class PollParticipationViewModel {
       );
     } else if (poll.poll_type === "open_text") {
       this.openTextVm = new OpenTextPollViewModel(
+        this._api,
+        this._fingerprint,
+      );
+    } else if (poll.poll_type === "word_cloud") {
+      this.wordCloudVm = new WordCloudViewModel(
         this._api,
         this._fingerprint,
       );
@@ -159,6 +173,13 @@ export class PollParticipationViewModel {
             );
           } else if (pollType === "open_text") {
             // Open text results are loaded on demand, not pushed
+          } else if (pollType === "word_cloud" && this.wordCloudVm) {
+            this.wordCloudVm.handleWordCloudUpdated(
+              data.results as {
+                total_responses: number;
+                words: WordFrequency[];
+              },
+            );
           } else {
             if (!isRecord(data.results)) break;
             const optionsData = (
@@ -197,10 +218,7 @@ export class PollParticipationViewModel {
   }
 
   private handlePollDeactivated(): void {
-    this.ratingVm?.dispose();
-    this.openTextVm?.dispose();
-    this.ratingVm = null;
-    this.openTextVm = null;
+    this.disposeAllSubVms();
     this.resetPollState(null);
   }
 
@@ -211,7 +229,6 @@ export class PollParticipationViewModel {
   }
 
   dispose(): void {
-    this.ratingVm?.dispose();
-    this.openTextVm?.dispose();
+    this.disposeAllSubVms();
   }
 }

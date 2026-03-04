@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { BarChart3, Star, MessageSquare } from "lucide-react";
+import { BarChart3, Star, MessageSquare, Cloud } from "lucide-react";
 import type { PollType } from "@domain/entities/Poll";
 
 interface PollTypeOption {
@@ -27,6 +27,12 @@ const POLL_TYPE_OPTIONS: PollTypeOption[] = [
     label: "Open Response",
     icon: <MessageSquare size={16} />,
     id: "poll-type-option-open-text",
+  },
+  {
+    type: "word_cloud",
+    label: "Word Cloud",
+    icon: <Cloud size={16} />,
+    id: "poll-type-option-word-cloud",
   },
 ];
 

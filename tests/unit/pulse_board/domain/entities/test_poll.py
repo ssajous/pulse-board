@@ -246,20 +246,21 @@ class TestPollCreateValidation:
             )
 
     def test_unknown_poll_type_raises_validation_error(self) -> None:
-        """Should raise ValidationError for unknown poll type."""
-        with pytest.raises(ValidationError, match="Unknown poll type 'word_cloud'"):
+        """Should raise ValidationError for an entirely unknown poll type."""
+        with pytest.raises(ValidationError, match="Unknown poll type 'bogus_type'"):
             Poll.create(
                 event_id=uuid.uuid4(),
                 question="Q?",
                 option_texts=["A", "B"],
-                poll_type="word_cloud",
+                poll_type="bogus_type",
             )
 
     def test_valid_poll_types_constant_contains_expected_types(self) -> None:
-        """VALID_POLL_TYPES should contain the three supported types."""
+        """VALID_POLL_TYPES should contain the four supported types."""
         assert "multiple_choice" in VALID_POLL_TYPES
         assert "rating" in VALID_POLL_TYPES
         assert "open_text" in VALID_POLL_TYPES
+        assert "word_cloud" in VALID_POLL_TYPES
 
 
 class TestPollActivateDeactivate:

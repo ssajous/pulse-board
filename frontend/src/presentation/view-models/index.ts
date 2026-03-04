@@ -45,6 +45,11 @@ export {
   OpenTextPollViewModelProvider,
   useOpenTextPollViewModel,
 } from "./OpenTextPollViewModelContext";
+export { WordCloudViewModel } from "./WordCloudViewModel";
+export {
+  WordCloudViewModelProvider,
+  useWordCloudViewModel,
+} from "./WordCloudViewModelContext";
 export { HostDashboardViewModel } from "./HostDashboardViewModel";
 export {
   HostDashboardViewModelProvider,
