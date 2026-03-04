@@ -19,6 +19,7 @@ from pulse_board.application.use_cases.get_poll_results import (
     GetPollResultsUseCase,
     OpenTextPollResultsResult,
     RatingPollResultsResult,
+    WordCloudPollResultsResult,
 )
 from pulse_board.application.use_cases.submit_poll_response import (
     SubmitPollResponseUseCase,
@@ -52,6 +53,8 @@ from pulse_board.presentation.api.schemas.polls import (
     RatingPollResultsResponse,
     SubmitPollResponseRequest,
     SubmitPollResponseSchema,
+    WordCloudPollResultsResponse,
+    WordFrequencySchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -253,7 +256,8 @@ async def activate_poll(
     description=(
         "Submit a response to an active poll. For multiple_choice polls, "
         "provide option_id. For rating polls, provide response_value as an "
-        "integer 1-5. For open_text polls, provide response_value as a string."
+        "integer 1-5. For open_text polls, provide response_value as a string. "
+        "For word_cloud polls, provide response_value as a 1-3 word phrase."
     ),
     responses={
         201: {"description": "Response submitted"},
@@ -304,6 +308,13 @@ async def submit_poll_response(
             results_payload = {
                 "total_responses": poll_results.total_responses,
             }
+        elif isinstance(poll_results, WordCloudPollResultsResult):
+            results_payload = {
+                "total_responses": poll_results.total_responses,
+                "frequencies": [
+                    {"text": w.text, "count": w.count} for w in poll_results.words
+                ],
+            }
         else:
             results_payload = {
                 "options": [
@@ -344,7 +355,8 @@ async def submit_poll_response(
     description=(
         "Retrieve aggregated results for a poll. The response shape varies "
         "by poll type: multiple_choice returns per-option counts, rating returns "
-        "average and distribution, open_text returns paginated responses."
+        "average and distribution, open_text returns paginated responses, "
+        "word_cloud returns word frequency list."
     ),
     responses={
         200: {"description": "Poll results"},
@@ -363,7 +375,12 @@ async def get_poll_results(
     use_case: GetPollResultsUseCase = Depends(
         get_get_poll_results_use_case,
     ),
-) -> PollResultsResponse | RatingPollResultsResponse | OpenTextPollResultsResponse:
+) -> (
+    PollResultsResponse
+    | RatingPollResultsResponse
+    | OpenTextPollResultsResponse
+    | WordCloudPollResultsResponse
+):
     """Get aggregated results for a poll."""
     result = await asyncio.to_thread(
         use_case.execute,
@@ -397,6 +414,16 @@ async def get_poll_results(
             page=result.page,
             page_size=result.page_size,
             total_pages=result.total_pages,
+        )
+
+    if isinstance(result, WordCloudPollResultsResult):
+        return WordCloudPollResultsResponse(
+            poll_id=str(result.poll_id),
+            question=result.question,
+            total_responses=result.total_responses,
+            frequencies=[
+                WordFrequencySchema(text=w.text, count=w.count) for w in result.words
+            ],
         )
 
     return PollResultsResponse(

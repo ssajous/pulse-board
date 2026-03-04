@@ -4,6 +4,7 @@ import { usePollParticipationViewModel } from "@presentation/view-models";
 import { PollResults } from "@presentation/components/poll-results";
 import { RatingPollParticipation } from "@presentation/components/polls/rating-poll-participation";
 import { OpenTextPollParticipation } from "@presentation/components/polls/open-text-poll-participation";
+import { WordCloudPollParticipation } from "@presentation/components/polls/word-cloud-poll-participation";
 import { PollParticipationQuestion } from "./PollParticipationQuestion";
 import { PollParticipationOptionList } from "./PollParticipationOptionList";
 import { PollParticipationSubmitButton } from "./PollParticipationSubmitButton";
@@ -27,6 +28,15 @@ export const PollParticipation = observer(
         <OpenTextPollParticipation
           poll={activePoll}
           vm={vm.openTextVm}
+        />
+      );
+    }
+
+    if (activePoll.poll_type === "word_cloud" && vm.wordCloudVm) {
+      return (
+        <WordCloudPollParticipation
+          poll={activePoll}
+          vm={vm.wordCloudVm}
         />
       );
     }

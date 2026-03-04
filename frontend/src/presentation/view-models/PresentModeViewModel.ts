@@ -4,6 +4,7 @@ import type {
   PresentActivePoll,
   PresentTopic,
 } from "@domain/entities/PresentState";
+import type { PollType, WordFrequency } from "@domain/entities/Poll";
 import type { EventApiPort } from "@domain/ports/EventApiPort";
 import type { PresentStateApiPort } from "@domain/ports/PresentStateApiPort";
 import type { WebSocketPort } from "@domain/ports/WebSocketPort";
@@ -139,6 +140,9 @@ export class PresentModeViewModel {
       question: data.question,
       total_votes: 0,
       options,
+      poll_type: (data.poll_type as PollType) ?? "multiple_choice",
+      frequencies: [],
+      total_responses: 0,
     };
   }
 
@@ -146,6 +150,19 @@ export class PresentModeViewModel {
     data: Record<string, unknown>,
   ): void {
     if (!this.activePoll) return;
+
+    if (data.poll_type === "word_cloud" && isRecord(data.results)) {
+      const resultsObj = data.results as Record<string, unknown>;
+      this.activePoll = {
+        ...this.activePoll,
+        poll_type: "word_cloud",
+        frequencies: (resultsObj.frequencies as WordFrequency[]) ?? [],
+        total_responses:
+          (resultsObj.total_responses as number) ?? 0,
+      };
+      return;
+    }
+
     if (!Array.isArray(data.results)) return;
 
     const options = data.results as Array<{

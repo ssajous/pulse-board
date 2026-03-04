@@ -605,6 +605,176 @@ describe("PresentModeViewModel", () => {
     });
   });
 
+  describe("WebSocket: poll_activated with word_cloud type", () => {
+    beforeEach(async () => {
+      await vm.initialize("ABC123");
+    });
+
+    it("sets poll_type on activePoll when poll_type is 'word_cloud'", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      expect(vm.activePoll).not.toBeNull();
+      expect(vm.activePoll!.poll_type).toBe("word_cloud");
+    });
+
+    it("sets empty frequencies on activePoll for word_cloud poll", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      expect(vm.activePoll!.frequencies).toEqual([]);
+    });
+
+    it("sets total_responses to 0 on activePoll for word_cloud poll", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      expect(vm.activePoll!.total_responses).toBe(0);
+    });
+
+    it("sets poll_id and question correctly for word_cloud poll", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll-99",
+        question: "One word that describes the session?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+
+      expect(vm.activePoll!.poll_id).toBe("wc-poll-99");
+      expect(vm.activePoll!.question).toBe(
+        "One word that describes the session?",
+      );
+    });
+  });
+
+  describe("WebSocket: poll_results_updated with word cloud data", () => {
+    beforeEach(async () => {
+      await vm.initialize("ABC123");
+
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "wc-poll",
+        question: "What word comes to mind?",
+        poll_type: "word_cloud",
+        options: [],
+      });
+    });
+
+    it("updates frequencies when results has a 'frequencies' array", () => {
+      const frequencies = [
+        { text: "innovation", count: 10 },
+        { text: "growth", count: 7 },
+      ];
+
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "wc-poll",
+        poll_type: "word_cloud",
+        results: { total_responses: 17, frequencies },
+      });
+
+      expect(vm.activePoll!.frequencies).toEqual(frequencies);
+    });
+
+    it("updates total_responses when results has a 'frequencies' array", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "wc-poll",
+        poll_type: "word_cloud",
+        results: {
+          total_responses: 42,
+          frequencies: [{ text: "cloud", count: 42 }],
+        },
+      });
+
+      expect(vm.activePoll!.total_responses).toBe(42);
+    });
+
+    it("sets poll_type to 'word_cloud' on activePoll after results update", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "wc-poll",
+        poll_type: "word_cloud",
+        results: {
+          total_responses: 5,
+          frequencies: [{ text: "test", count: 5 }],
+        },
+      });
+
+      expect(vm.activePoll!.poll_type).toBe("word_cloud");
+    });
+
+    it("handles empty frequencies array in results", () => {
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "wc-poll",
+        poll_type: "word_cloud",
+        results: { total_responses: 0, frequencies: [] },
+      });
+
+      expect(vm.activePoll!.frequencies).toEqual([]);
+      expect(vm.activePoll!.total_responses).toBe(0);
+    });
+
+    it("falls back to array-results behavior when results is a plain array (non-word-cloud)", () => {
+      // Replace active poll with a multiple_choice one to test the fallback path
+      wsResult.messageHandler.current!({
+        type: "poll_activated",
+        poll_id: "mc-poll",
+        question: "Pick an option",
+        poll_type: "multiple_choice",
+        options: [
+          { id: "opt-1", text: "Red" },
+          { id: "opt-2", text: "Blue" },
+        ],
+      });
+
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "mc-poll",
+        results: [
+          { option_id: "opt-1", text: "Red", count: 5, percentage: 50.0 },
+          { option_id: "opt-2", text: "Blue", count: 5, percentage: 50.0 },
+        ],
+      });
+
+      expect(vm.activePoll!.options).toEqual([
+        { option_id: "opt-1", text: "Red", count: 5, percentage: 50.0 },
+        { option_id: "opt-2", text: "Blue", count: 5, percentage: 50.0 },
+      ]);
+      expect(vm.activePoll!.total_votes).toBe(10);
+    });
+
+    it("ignores results update when results is an object without 'frequencies' and not an array", () => {
+      const pollBefore = vm.activePoll;
+
+      wsResult.messageHandler.current!({
+        type: "poll_results_updated",
+        poll_id: "wc-poll",
+        results: { some_unknown_field: "data" },
+      });
+
+      // frequencies should remain unchanged since there's no 'frequencies' field and it's not an array
+      expect(vm.activePoll!.frequencies).toEqual(pollBefore!.frequencies);
+    });
+  });
+
   describe("WebSocket: score_update", () => {
     beforeEach(async () => {
       const topics = [

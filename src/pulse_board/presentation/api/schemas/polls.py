@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CreatePollRequest(BaseModel):
@@ -15,7 +15,7 @@ class CreatePollRequest(BaseModel):
     )
     poll_type: str = Field(
         default="multiple_choice",
-        description="Type of poll: multiple_choice, rating, or open_text",
+        description=("Type of poll: multiple_choice, rating, open_text, or word_cloud"),
     )
     options: list[str] = Field(
         default=[],
@@ -128,9 +128,19 @@ class SubmitPollResponseRequest(BaseModel):
     response_value: int | str | None = Field(
         default=None,
         description=(
-            "Rating integer 1-5 (rating polls) or text string (open_text polls)"
+            "Rating integer 1-5 (rating polls), text string "
+            "(open_text polls), or 1-3 word phrase (word_cloud polls)"
         ),
     )
+
+    @field_validator("response_value")
+    @classmethod
+    def limit_string_length(cls, v: int | str | None) -> int | str | None:
+        """Reject oversized string payloads at the API boundary."""
+        if isinstance(v, str) and len(v) > 500:
+            msg = "response_value must be 500 characters or fewer"
+            raise ValueError(msg)
+        return v
 
     model_config = {
         "json_schema_extra": {
@@ -286,4 +296,32 @@ class OpenTextPollResultsResponse(BaseModel):
     )
     total_pages: int = Field(
         description="Total number of pages",
+    )
+
+
+class WordFrequencySchema(BaseModel):
+    """A single word frequency in word cloud results."""
+
+    text: str = Field(
+        description="The normalized word or phrase",
+    )
+    count: int = Field(
+        description="Number of times this word was submitted",
+    )
+
+
+class WordCloudPollResultsResponse(BaseModel):
+    """Aggregated word cloud poll results."""
+
+    poll_id: str = Field(
+        description="Unique poll identifier",
+    )
+    question: str = Field(
+        description="The poll question text",
+    )
+    total_responses: int = Field(
+        description="Total number of word cloud submissions",
+    )
+    frequencies: list[WordFrequencySchema] = Field(
+        description="Word frequencies sorted by count descending",
     )

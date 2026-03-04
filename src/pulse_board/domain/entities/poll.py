@@ -10,7 +10,7 @@ MAX_QUESTION_LENGTH = 500
 MIN_OPTIONS = 2
 MAX_OPTIONS = 10
 DEFAULT_POLL_TYPE = "multiple_choice"
-VALID_POLL_TYPES = {"multiple_choice", "rating", "open_text"}
+VALID_POLL_TYPES = {"multiple_choice", "rating", "open_text", "word_cloud"}
 RATING_OPTIONS = ["1", "2", "3", "4", "5"]
 
 
@@ -65,8 +65,8 @@ class Poll:
             option_texts: List of option display texts (2-10 for
                 multiple_choice; ignored for rating and open_text).
             poll_type: The type of poll. Must be one of
-                ``multiple_choice``, ``rating``, or ``open_text``.
-                Defaults to ``multiple_choice``.
+                ``multiple_choice``, ``rating``, ``open_text``, or
+                ``word_cloud``. Defaults to ``multiple_choice``.
 
         Returns:
             A new Poll instance with generated id, option UUIDs,
@@ -83,7 +83,7 @@ class Poll:
 
         if poll_type == "rating":
             effective_texts = RATING_OPTIONS
-        elif poll_type == "open_text":
+        elif poll_type in ("open_text", "word_cloud"):
             effective_texts = []
         else:
             cls._validate_options(option_texts)

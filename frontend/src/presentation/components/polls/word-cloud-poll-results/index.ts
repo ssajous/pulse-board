@@ -1,0 +1,1 @@
+export { WordCloudPollResults } from "./WordCloudPollResults";

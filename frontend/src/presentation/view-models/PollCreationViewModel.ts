@@ -6,7 +6,7 @@ const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 10;
 const MAX_QUESTION_LENGTH = 500;
 
-const TYPES_WITHOUT_OPTIONS: PollType[] = ["rating", "open_text"];
+const TYPES_WITHOUT_OPTIONS: PollType[] = ["rating", "open_text", "word_cloud"];
 
 export class PollCreationViewModel {
   question = "";
