@@ -177,7 +177,7 @@ export class PollParticipationViewModel {
             this.wordCloudVm.handleWordCloudUpdated(
               data.results as {
                 total_responses: number;
-                words: WordFrequency[];
+                frequencies: WordFrequency[];
               },
             );
           } else {

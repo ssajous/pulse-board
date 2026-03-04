@@ -680,7 +680,7 @@ describe("PollParticipationViewModel", () => {
         type: "poll_results_updated",
         poll_id: "wc-poll",
         poll_type: "word_cloud",
-        results: { total_responses: 8, words },
+        results: { total_responses: 8, frequencies: words },
       });
 
       expect(wordCloudVm.frequencies).toEqual(words);
@@ -699,7 +699,7 @@ describe("PollParticipationViewModel", () => {
           type: "poll_results_updated",
           poll_id: "poll-1",
           poll_type: "word_cloud",
-          results: { total_responses: 5, words: [{ text: "test", count: 5 }] },
+          results: { total_responses: 5, frequencies: [{ text: "test", count: 5 }] },
         });
       }).not.toThrow();
     });

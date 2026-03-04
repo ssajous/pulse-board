@@ -322,6 +322,6 @@ class WordCloudPollResultsResponse(BaseModel):
     total_responses: int = Field(
         description="Total number of word cloud submissions",
     )
-    words: list[WordFrequencySchema] = Field(
+    frequencies: list[WordFrequencySchema] = Field(
         description="Word frequencies sorted by count descending",
     )

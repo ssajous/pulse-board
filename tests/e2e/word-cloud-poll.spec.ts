@@ -53,7 +53,7 @@ test.describe("Word Cloud Poll", () => {
 
     // Verify the word cloud participation container is visible
     await expect(
-      eventPageA.locator("#word-cloud-participation")
+      eventPageA.locator("#poll-participation")
     ).toBeVisible({ timeout: 5_000 });
 
     // Verify the question text is displayed
@@ -89,7 +89,7 @@ test.describe("Word Cloud Poll", () => {
     // Wait for the participation form
     await waitForPollToAppear(eventPageA);
     await expect(
-      eventPageA.locator("#word-cloud-participation")
+      eventPageA.locator("#poll-participation")
     ).toBeVisible();
 
     // Enter a valid single word
@@ -126,7 +126,7 @@ test.describe("Word Cloud Poll", () => {
 
     await waitForPollToAppear(eventPageA);
     await expect(
-      eventPageA.locator("#word-cloud-participation")
+      eventPageA.locator("#poll-participation")
     ).toBeVisible();
 
     // Enter a 4-word phrase (exceeds the 3-word limit)
@@ -163,7 +163,7 @@ test.describe("Word Cloud Poll", () => {
     // Participant A submits via the UI
     await waitForPollToAppear(eventPageA);
     await expect(
-      eventPageA.locator("#word-cloud-participation")
+      eventPageA.locator("#poll-participation")
     ).toBeVisible();
 
     await eventPageA.fill("#word-cloud-response-input", "great");
@@ -208,7 +208,7 @@ test.describe("Word Cloud Poll", () => {
 
     await waitForPollToAppear(eventPageA);
     await expect(
-      eventPageA.locator("#word-cloud-participation")
+      eventPageA.locator("#poll-participation")
     ).toBeVisible();
 
     // Participant A submits a word via the UI

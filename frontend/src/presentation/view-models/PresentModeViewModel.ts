@@ -156,7 +156,7 @@ export class PresentModeViewModel {
       this.activePoll = {
         ...this.activePoll,
         poll_type: "word_cloud",
-        frequencies: (resultsObj.words as WordFrequency[]) ?? [],
+        frequencies: (resultsObj.frequencies as WordFrequency[]) ?? [],
         total_responses:
           (resultsObj.total_responses as number) ?? 0,
       };

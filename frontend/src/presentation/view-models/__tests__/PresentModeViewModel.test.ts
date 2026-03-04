@@ -676,8 +676,8 @@ describe("PresentModeViewModel", () => {
       });
     });
 
-    it("updates frequencies when results has a 'words' array", () => {
-      const words = [
+    it("updates frequencies when results has a 'frequencies' array", () => {
+      const frequencies = [
         { text: "innovation", count: 10 },
         { text: "growth", count: 7 },
       ];
@@ -686,20 +686,20 @@ describe("PresentModeViewModel", () => {
         type: "poll_results_updated",
         poll_id: "wc-poll",
         poll_type: "word_cloud",
-        results: { total_responses: 17, words },
+        results: { total_responses: 17, frequencies },
       });
 
-      expect(vm.activePoll!.frequencies).toEqual(words);
+      expect(vm.activePoll!.frequencies).toEqual(frequencies);
     });
 
-    it("updates total_responses when results has a 'words' array", () => {
+    it("updates total_responses when results has a 'frequencies' array", () => {
       wsResult.messageHandler.current!({
         type: "poll_results_updated",
         poll_id: "wc-poll",
         poll_type: "word_cloud",
         results: {
           total_responses: 42,
-          words: [{ text: "cloud", count: 42 }],
+          frequencies: [{ text: "cloud", count: 42 }],
         },
       });
 
@@ -713,19 +713,19 @@ describe("PresentModeViewModel", () => {
         poll_type: "word_cloud",
         results: {
           total_responses: 5,
-          words: [{ text: "test", count: 5 }],
+          frequencies: [{ text: "test", count: 5 }],
         },
       });
 
       expect(vm.activePoll!.poll_type).toBe("word_cloud");
     });
 
-    it("handles empty words array in results", () => {
+    it("handles empty frequencies array in results", () => {
       wsResult.messageHandler.current!({
         type: "poll_results_updated",
         poll_id: "wc-poll",
         poll_type: "word_cloud",
-        results: { total_responses: 0, words: [] },
+        results: { total_responses: 0, frequencies: [] },
       });
 
       expect(vm.activePoll!.frequencies).toEqual([]);
@@ -761,7 +761,7 @@ describe("PresentModeViewModel", () => {
       expect(vm.activePoll!.total_votes).toBe(10);
     });
 
-    it("ignores results update when results is an object without 'words' and not an array", () => {
+    it("ignores results update when results is an object without 'frequencies' and not an array", () => {
       const pollBefore = vm.activePoll;
 
       wsResult.messageHandler.current!({
@@ -770,7 +770,7 @@ describe("PresentModeViewModel", () => {
         results: { some_unknown_field: "data" },
       });
 
-      // frequencies should remain unchanged since there's no 'words' field and it's not an array
+      // frequencies should remain unchanged since there's no 'frequencies' field and it's not an array
       expect(vm.activePoll!.frequencies).toEqual(pollBefore!.frequencies);
     });
   });

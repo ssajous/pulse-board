@@ -419,7 +419,7 @@ describe("WordCloudViewModel", () => {
         { text: "apple", count: 4 },
         { text: "banana", count: 2 },
       ];
-      vm.handleWordCloudUpdated({ total_responses: 6, words });
+      vm.handleWordCloudUpdated({ total_responses: 6, frequencies: words });
 
       expect(vm.frequencies).toEqual(words);
     });
@@ -427,14 +427,14 @@ describe("WordCloudViewModel", () => {
     it("updates totalResponses from WebSocket data", () => {
       vm.handleWordCloudUpdated({
         total_responses: 42,
-        words: [{ text: "foo", count: 42 }],
+        frequencies: [{ text: "foo", count: 42 }],
       });
 
       expect(vm.totalResponses).toBe(42);
     });
 
     it("handles empty words array", () => {
-      vm.handleWordCloudUpdated({ total_responses: 0, words: [] });
+      vm.handleWordCloudUpdated({ total_responses: 0, frequencies: [] });
 
       expect(vm.frequencies).toEqual([]);
       expect(vm.totalResponses).toBe(0);
@@ -443,12 +443,12 @@ describe("WordCloudViewModel", () => {
     it("replaces existing frequencies with new data", () => {
       vm.handleWordCloudUpdated({
         total_responses: 3,
-        words: [{ text: "old", count: 3 }],
+        frequencies: [{ text: "old", count: 3 }],
       });
 
       vm.handleWordCloudUpdated({
         total_responses: 5,
-        words: [
+        frequencies: [
           { text: "new1", count: 3 },
           { text: "new2", count: 2 },
         ],

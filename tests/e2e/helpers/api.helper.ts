@@ -322,7 +322,7 @@ export interface WordCloudPollResultsResponse {
   poll_id: string;
   question: string;
   total_responses: number;
-  words: WordFrequency[];
+  frequencies: WordFrequency[];
 }
 
 export async function createWordCloudPollViaApi(

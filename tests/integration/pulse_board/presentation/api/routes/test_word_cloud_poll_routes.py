@@ -427,7 +427,7 @@ class TestGetWordCloudResults:
         body = response.json()
 
         assert body["total_responses"] == 0
-        assert body["words"] == []
+        assert body["frequencies"] == []
 
     def test_get_results_response_shape(
         self,
@@ -445,7 +445,7 @@ class TestGetWordCloudResults:
         assert body["poll_id"] == poll_id
         assert body["question"] == "Shape check poll"
         assert "total_responses" in body
-        assert "words" in body
+        assert "frequencies" in body
 
     def test_get_results_reflects_submitted_responses(
         self,
@@ -480,7 +480,7 @@ class TestGetWordCloudResults:
         body = response.json()
 
         assert body["total_responses"] == 3
-        words_by_text = {w["text"]: w["count"] for w in body["words"]}
+        words_by_text = {w["text"]: w["count"] for w in body["frequencies"]}
         assert words_by_text.get("great") == 2
         assert words_by_text.get("good") == 1
 
@@ -514,8 +514,8 @@ class TestGetWordCloudResults:
         response = test_client.get(f"/api/polls/{poll_id}/results")
         body = response.json()
 
-        assert body["words"][0]["text"] == "top"
-        assert body["words"][0]["count"] == 3
+        assert body["frequencies"][0]["text"] == "top"
+        assert body["frequencies"][0]["count"] == 3
 
     def test_get_results_for_nonexistent_poll_returns_404(
         self,

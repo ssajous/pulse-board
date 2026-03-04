@@ -311,7 +311,7 @@ async def submit_poll_response(
         elif isinstance(poll_results, WordCloudPollResultsResult):
             results_payload = {
                 "total_responses": poll_results.total_responses,
-                "words": [
+                "frequencies": [
                     {"text": w.text, "count": w.count} for w in poll_results.words
                 ],
             }
@@ -421,7 +421,7 @@ async def get_poll_results(
             poll_id=str(result.poll_id),
             question=result.question,
             total_responses=result.total_responses,
-            words=[
+            frequencies=[
                 WordFrequencySchema(text=w.text, count=w.count) for w in result.words
             ],
         )

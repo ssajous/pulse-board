@@ -84,9 +84,9 @@ export class WordCloudViewModel {
 
   handleWordCloudUpdated(data: {
     total_responses: number;
-    words: Array<{ text: string; count: number }>;
+    frequencies: Array<{ text: string; count: number }>;
   }): void {
-    this.frequencies = data.words;
+    this.frequencies = data.frequencies;
     this.totalResponses = data.total_responses;
   }
 

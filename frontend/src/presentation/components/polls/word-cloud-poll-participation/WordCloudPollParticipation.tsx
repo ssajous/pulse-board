@@ -17,7 +17,7 @@ export const WordCloudPollParticipation = observer(
   }: WordCloudPollParticipationProps) {
     return (
       <div
-        id="word-cloud-participation"
+        id="poll-participation"
         className="mb-8 rounded-xl border border-l-4 border-slate-700 border-l-violet-500 bg-slate-800 p-6 shadow-lg shadow-slate-900/20"
       >
         <div className="mb-2 flex items-center gap-2 text-sm font-medium text-violet-400">
